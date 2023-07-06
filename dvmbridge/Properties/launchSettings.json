@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "fnerouter": {
+      "commandName": "Project",
+      "commandLineArgs": "-c config.example.yml --log-on-console"
+    }
+  }
+}

@@ -26,13 +26,16 @@
 #if !defined(__COMMON_H__)
 #define __COMMON_H__
 
-// ---------------------------------------------------------------------------
-//  Constants
-// ---------------------------------------------------------------------------
+namespace vocoder
+{
+    // ---------------------------------------------------------------------------
+    //  Constants
+    // ---------------------------------------------------------------------------
 
-enum class MBEMode {
-    DMRAMBE,
-    IMBE,                   // e.g. IMBE used by P25
-};
+    public enum class MBEMode {
+        DMRAMBE,
+        IMBE,                   // e.g. IMBE used by P25
+    };
+} // namespace vocoder
 
 #endif // __COMMON_H__
