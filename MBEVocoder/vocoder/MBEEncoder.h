@@ -26,6 +26,7 @@
 #if !defined(__MBE_ENCODER_H__)
 #define __MBE_ENCODER_H__
 
+#include "Defines.h"
 #include "mbe.h"
 #include "imbe/imbe_vocoder.h"
 
@@ -47,7 +48,7 @@ namespace vocoder
     //      Implements MBE audio encoding.
     // ---------------------------------------------------------------------------
 
-    class MBEEncoder {
+    class HOST_SW_API MBEEncoder {
     public:
         /// <summary>Initializes a new instance of the MBEEncoder class.</summary>
         MBEEncoder(MBE_ENCODER_MODE mode);

@@ -96,7 +96,11 @@ typedef unsigned long long  ulong64_t;
 //  Constants
 // ---------------------------------------------------------------------------
 
+#if defined(_COMPILE_DLL)
 #define HOST_SW_API     __declspec(dllexport)
+#else
+#define HOST_SW_API     __declspec(dllimport)
+#endif
 
 #if defined(__GNUC__) || defined(__GNUG__)
 #define __forceinline __attribute__((always_inline))
