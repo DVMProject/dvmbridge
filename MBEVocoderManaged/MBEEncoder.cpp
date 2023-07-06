@@ -27,6 +27,7 @@
 #include "Common.h"
 
 using namespace System;
+using namespace System::Runtime::InteropServices;
 
 namespace vocoder
 {
@@ -70,7 +71,7 @@ namespace vocoder
         }
 
         /// <summary>Encodes the given PCM samples using the encoder mode to MBE codewords.</summary>
-        void encode(array<Int16>^ samples, [Runtime::InteropServices::Out] array<Byte>^ codeword)
+        void encode(array<Int16>^ samples, [Out] array<Byte>^% codeword)
         {
             codeword = nullptr;
 

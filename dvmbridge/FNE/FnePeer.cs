@@ -435,6 +435,12 @@ namespace dvmbridge.FNE
                                 }
                                 break;
 
+                            case Constants.NET_FUNC_MASTER:
+                                {
+                                    /* stub */
+                                }
+                                break;
+
                             case Constants.NET_FUNC_NAK:                                                    // Master NAK
                                 {
                                     if (this.peerId == peerId)
@@ -564,6 +570,7 @@ namespace dvmbridge.FNE
                                     }
                                 }
                                 break;
+
                             case Constants.NET_FUNC_MST_CLOSING:                                            // Master Closing (Disconnect)
                                 {
                                     if (this.peerId == peerId)

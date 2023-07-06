@@ -26,7 +26,10 @@ using Serilog;
 
 using dvmbridge.FNE;
 using dvmbridge.FNE.DMR;
+
 using vocoder;
+
+using NAudio.Wave;
 
 namespace dvmbridge
 {
@@ -119,11 +122,22 @@ namespace dvmbridge
     public abstract partial class FneSystemBase
     {
         private const int P25_FIXED_SLOT = 2;
-        private const int NXDN_FIXED_SLOT = 3;
+
+        public const int SAMPLE_RATE = 8000;
+        public const int BITS_PER_SECOND = 16;
+
+        private const int AUDIO_BUFFER_MS = 35;
+        private const int AUDIO_NO_BUFFERS = 3;
 
         protected FneBase fne;
 
         private SlotStatus[] status;
+
+        private WaveFormat waveFormat;                 //
+        private BufferedWaveProvider waveProvider;     //
+
+        private WaveIn waveIn;
+        private WaveOut waveOut;
 
         /*
         ** Properties
@@ -238,6 +252,28 @@ namespace dvmbridge
                 }
             };
 
+            this.waveFormat = new WaveFormat(SAMPLE_RATE, BITS_PER_SECOND, 1);
+
+            // initialize the output audio provider
+            this.waveOut = new WaveOut();
+            this.waveOut.DeviceNumber = Program.WaveOutDevice;
+
+            this.waveProvider = new BufferedWaveProvider(waveFormat) { DiscardOnBufferOverflow = true };
+            this.waveOut.Init(waveProvider);
+            this.waveOut.Play();
+
+            // initialize the primary input audio provider
+            if (Program.WaveInDevice != -1)
+            {
+                this.waveIn = new WaveIn();
+                this.waveIn.WaveFormat = waveFormat;
+                this.waveIn.DeviceNumber = Program.WaveInDevice;
+                this.waveIn.BufferMilliseconds = AUDIO_BUFFER_MS;
+                this.waveIn.NumberOfBuffers = AUDIO_NO_BUFFERS;
+
+                this.waveIn.StartRecording();
+            }
+
             // initialize DMR vocoders
             dmrDecoder = new MBEDecoderManaged(MBEMode.DMRAMBE);
             dmrEncoder = new MBEEncoderManaged(MBEMode.DMRAMBE);
@@ -245,6 +281,9 @@ namespace dvmbridge
             // initialize P25 vocoders
             p25Decoder = new MBEDecoderManaged(MBEMode.IMBE);
             p25Encoder = new MBEEncoderManaged(MBEMode.IMBE);
+
+            netLDU1 = new byte[9 * 25];
+            netLDU2 = new byte[9 * 25];
         }
 
         /// <summary>
@@ -261,8 +300,30 @@ namespace dvmbridge
         /// </summary>
         public void Stop()
         {
+            ShutdownAudio();
             if (fne.IsStarted)
                 fne.Stop();
+        }
+
+        /// <summary>
+        /// Shuts down the audio resources.
+        /// </summary>
+        private void ShutdownAudio()
+        {
+            if (this.waveOut != null)
+            {
+                if (waveOut.PlaybackState == PlaybackState.Playing)
+                    waveOut.Stop();
+                waveOut.Dispose();
+                waveOut = null;
+            }
+
+            if (this.waveIn != null)
+            {
+                waveIn.StopRecording();
+                waveIn.Dispose();
+                waveIn = null;
+            }
         }
 
         /// <summary>

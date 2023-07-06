@@ -38,6 +38,8 @@ using YamlDotNet.Serialization.NamingConventions;
 using FneLogLevel = dvmbridge.FNE.LogLevel;
 using dvmbridge.FNE.Utility;
 
+using NAudio.Wave;
+
 namespace dvmbridge
 {
     /// <summary>
@@ -84,6 +86,24 @@ namespace dvmbridge
             private set;
         } = FneLogLevel.INFO;
 
+        /// <summary>
+        /// Gets or sets the audio wave in device index.
+        /// </summary>
+        public static int WaveInDevice
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the audio wave in device index.
+        /// </summary>
+        public static int WaveOutDevice
+        {
+            get;
+            set;
+        }
+
         /*
         ** Methods
         */
@@ -100,11 +120,27 @@ namespace dvmbridge
             Console.WriteLine(AssemblyVersion._COPYRIGHT + "., All Rights Reserved.");
             Console.WriteLine();
 
-            Console.WriteLine(string.Format("usage: {0} [-h | --help] [-c | --config <path to configuration file>] [-l | --log-on-console]",
+            Console.WriteLine(string.Format("usage: {0} [-h | --help][-c | --config <path to configuration file>][-l | --log-on-console][-i <wave in device no.>][-o <wave out device no.>]",
                 Path.GetFileNameWithoutExtension(fileName)));
             Console.WriteLine();
             Console.WriteLine("Options:");
             p.WriteOptionDescriptions(Console.Out);
+
+            Console.WriteLine("\nAudio Input Devices:");
+            int waveInDevices = WaveIn.DeviceCount;
+            for (int waveInDevice = 0; waveInDevice < waveInDevices; waveInDevice++)
+            {
+                WaveInCapabilities deviceInfo = WaveIn.GetCapabilities(waveInDevice);
+                Console.WriteLine($"\t{waveInDevice}\t- {deviceInfo.ProductName}");
+            }
+
+            Console.WriteLine("\nAudio Output Devices:");
+            int waveOutDevices = WaveOut.DeviceCount;
+            for (int waveOutDevice = 0; waveOutDevice < waveOutDevices; waveOutDevice++)
+            {
+                WaveOutCapabilities deviceInfo = WaveOut.GetCapabilities(waveOutDevice);
+                Console.WriteLine($"\t{waveOutDevice}\t- {deviceInfo.ProductName}");
+            }
         }
 
         /// <summary>
@@ -134,12 +170,19 @@ namespace dvmbridge
             bool showHelp = false, showLogOnConsole = false;
             string configFile = string.Empty;
 
+            string waveInDeviceStr = string.Empty, waveOutDeviceStr = string.Empty;
+            WaveInDevice = -1;
+            WaveOutDevice = -1;
+
             // command line parameters
             OptionSet options = new OptionSet()
             {
                 { "h|help", "show this message and exit", v => showHelp = v != null },
                 { "c=|config=", "sets the path to the configuration file", v => configFile = v },
                 { "l|log-on-console", "shows log on console", v => showLogOnConsole = v != null },
+
+                { "i=|input-device=", "audio input device", v => waveInDeviceStr = v },
+                { "o=|output-device=", "audio output device", v => waveOutDeviceStr = v },
             };
 
             // attempt to parse the commandline
@@ -159,6 +202,63 @@ namespace dvmbridge
             {
                 Usage(options);
                 Environment.Exit((int)ERRNO.ENOERR);
+            }
+
+            // determine which audio input device we're using
+            bool logInputDeviceError = false;
+            if (waveInDeviceStr == null)
+                logInputDeviceError = true;
+            if (waveInDeviceStr == string.Empty)
+                logInputDeviceError = true;
+
+            if (waveInDeviceStr != null)
+            {
+                if (waveInDeviceStr != string.Empty)
+                {
+                    int device = -1;
+                    if (int.TryParse(waveInDeviceStr, out device))
+                        WaveInDevice = device;
+                    else
+                        logInputDeviceError = true;
+                }
+            }
+
+            // determine which audio output device we're using
+            if (waveOutDeviceStr == null)
+            {
+                Console.WriteLine("error: no output audio device specified!");
+                Usage(options);
+                Environment.Exit((int)ERRNO.EBADOPTIONS);
+            }
+
+            if (waveOutDeviceStr == string.Empty)
+            {
+                Console.WriteLine("error: no output audio device specified!");
+                Usage(options);
+                Environment.Exit((int)ERRNO.EBADOPTIONS);
+            }
+
+            if (waveOutDeviceStr != null)
+            {
+                if (waveOutDeviceStr != string.Empty)
+                {
+                    int device = -1;
+                    if (int.TryParse(waveOutDeviceStr, out device))
+                        WaveOutDevice = device;
+                    else
+                    {
+                        Console.WriteLine($"error: could not process {waveOutDeviceStr} as a audio output device!");
+                        Usage(options);
+                        Environment.Exit((int)ERRNO.EBADOPTIONS);
+                    }
+                }
+            }
+
+            if (WaveOutDevice == -1)
+            {
+                Console.WriteLine("error: no output audio device specified!");
+                Usage(options);
+                Environment.Exit((int)ERRNO.EBADOPTIONS);
             }
 
             Assembly assembly = Assembly.GetExecutingAssembly();
@@ -284,6 +384,9 @@ namespace dvmbridge
 
             Log.Logger.Information(AssemblyVersion._VERSION);
             Log.Logger.Information(AssemblyVersion._COPYRIGHT + "., All Rights Reserved.");
+
+            if (logInputDeviceError)
+                Log.Logger.Error($"No input audio device specified or invalid audio device! Audio input will be disabled! {waveInDeviceStr}");
 
             try
             {

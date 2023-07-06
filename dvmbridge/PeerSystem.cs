@@ -58,10 +58,22 @@ namespace dvmbridge
         private static FnePeer Create()
         {
             IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, Program.Configuration.Port);
-            if (Program.Configuration.Address != null)
+
+            if (Program.Configuration.Address == null)
+                throw new NullReferenceException("address");
+            if (Program.Configuration.Address == string.Empty)
+                throw new ArgumentException("address");
+
+            // handle using address as IP or resolving from hostname to IP
+            try
             {
-                if (Program.Configuration.Address != string.Empty)
-                    endpoint = new IPEndPoint(IPAddress.Parse(Program.Configuration.Address), Program.Configuration.Port);
+                endpoint = new IPEndPoint(IPAddress.Parse(Program.Configuration.Address), Program.Configuration.Port);
+            }
+            catch (FormatException)
+            {
+                IPAddress[] addresses = Dns.GetHostAddresses(Program.Configuration.Address);
+                if (addresses.Length > 0)
+                    endpoint = new IPEndPoint(addresses[0], Program.Configuration.Port);
             }
 
             FnePeer peer = new FnePeer(Program.Configuration.Name, Program.Configuration.PeerId, endpoint);

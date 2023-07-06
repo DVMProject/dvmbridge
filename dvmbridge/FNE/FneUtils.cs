@@ -665,6 +665,52 @@ namespace dvmbridge.FNE
         /// </summary>
         /// <param name="buffer"></param>
         /// <param name="offset"></param>
+        public static string HexDump(short[] buffer, int offset = 0)
+        {
+            int bCount = 0, j = 0;
+
+            // iterate through buffer printing all the stored bytes
+            string res = "\n\tDUMP " + j.ToString("X4") + ":  ";
+            for (int i = offset; i < buffer.Length; i++)
+            {
+                short b = buffer[i];
+
+                // split the message every 16 bytes...
+                if (bCount == 16)
+                {
+                    //res += "    *" + DisplayHexChars(buffer, j) + "*\n";
+                    res += "\n";
+                    bCount = 0;
+                    j += 16;
+                    res += "\tDUMP " + j.ToString("X4") + ":  ";
+                }
+                else
+                    res += (bCount > 0) ? " " : "";
+
+                res += b.ToString("X4");
+                bCount++;
+            }
+
+            // if the byte count at this point is non-zero print the message
+            if (bCount != 0)
+            {
+                if (bCount < 16)
+                {
+                    for (int i = bCount; i < 16; i++)
+                        res += "   ";
+                }
+
+                //res += "    *" + DisplayHexChars(buffer, j) + "*";
+            }
+
+            return res;
+        }
+
+        /// <summary>
+        /// Perform a hex dump of a buffer.
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
         public static string HexDump(Memory<byte> buffer, int offset = 0)
         {
             int bCount = 0, j = 0;
