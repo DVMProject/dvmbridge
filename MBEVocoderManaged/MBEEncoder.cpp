@@ -80,11 +80,11 @@ namespace vocoder
             }
 
             // error check samples length
-            if (codeword->Length > PCM_SAMPLES) {
+            if (samples->Length > PCM_SAMPLES) {
                 throw gcnew System::ArgumentOutOfRangeException("samples length is > 160");
             }
 
-            if (codeword->Length < PCM_SAMPLES) {
+            if (samples->Length < PCM_SAMPLES) {
                 throw gcnew System::ArgumentOutOfRangeException("samples length is < 160");
             }
 
@@ -92,7 +92,9 @@ namespace vocoder
             int16_t pcmSamples[PCM_SAMPLES];
             ::memset(pcmSamples, 0x00U, PCM_SAMPLES);
             pin_ptr<Int16> ppSamples = &samples[0];
-            ::memcpy(pcmSamples, ppSamples, PCM_SAMPLES);
+            for (int n = 0; n < PCM_SAMPLES; n++) {
+                pcmSamples[n] = samples[n];
+            }
 
             // encode samples
             switch (m_mode) {
@@ -104,7 +106,10 @@ namespace vocoder
                 // copy encoded codewords into the managed array
                 codeword = gcnew array<Byte>(AMBE_CODEWORD_SAMPLES);
                 pin_ptr<Byte> ppCodeword = &codeword[0];
-                ::memcpy(ppCodeword, codewords, AMBE_CODEWORD_SAMPLES);
+                for (int n = 0; n < AMBE_CODEWORD_SAMPLES; n++) {
+                    *ppCodeword = codewords[n];
+                    ppCodeword++;
+                }
             }
             break;
             case MBEMode::IMBE:
@@ -116,7 +121,10 @@ namespace vocoder
                 // copy encoded codewords into the managed array
                 codeword = gcnew array<Byte>(IMBE_CODEWORD_SAMPLES);
                 pin_ptr<Byte> ppCodeword = &codeword[0];
-                ::memcpy(ppCodeword, codewords, IMBE_CODEWORD_SAMPLES);
+                for (int n = 0; n < IMBE_CODEWORD_SAMPLES; n++) {
+                    *ppCodeword = codewords[n];
+                    ppCodeword++;
+                }
             }
             break;
             }
