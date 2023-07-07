@@ -1,9 +1,9 @@
 /**
-* Digital Voice Modem - Fixed Network Equipment
+* Digital Voice Modem - Bridge
 * AGPLv3 Open Source. Use is subject to license terms.
 * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 *
-* @package DVM / Fixed Network Equipment
+* @package DVM / Bridge
 *
 */
 /*
