@@ -1,6 +1,6 @@
-# Digital Voice Modem FNE P25 <-> Analog Bridge
+# Digital Voice Modem FNE Audio Bridge
 
-README TODO
+The Digital Voice Modem FNE Audio Bridge is a helper application designed to allow Rx and Tx of digital audio from/to PCM.
 
 ## License
 
