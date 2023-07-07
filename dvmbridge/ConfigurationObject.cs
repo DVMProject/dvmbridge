@@ -83,6 +83,11 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
+        public float VOXSampleLevel = 30.0f;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public string Name;
         /// <summary>
         /// 

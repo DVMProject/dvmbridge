@@ -337,7 +337,7 @@ namespace dvmbridge
         private void MeterProvider_StreamVolume(object sender, StreamVolumeEventArgs e)
         {
             // handle Rx triggered by internal VOX
-            if (e.MaxSampleValues[0] > -40.0f)
+            if (e.MaxSampleValues[0] > Program.Configuration.VOXSampleLevel)
             {
                 audioDetect = true;
                 txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
@@ -378,6 +378,9 @@ namespace dvmbridge
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
                 this.meterProvider.Read(temp, 0, temp.Length);
 /*
+** bryanb: this is disabled .. for now; until transmit is stable
+*/
+#if false
                 if (audioDetect)
                 {
                     switch (Program.Configuration.TxMode)
@@ -390,7 +393,7 @@ namespace dvmbridge
                             break;
                     }
                 }
-*/
+#endif
             }
         }
 
