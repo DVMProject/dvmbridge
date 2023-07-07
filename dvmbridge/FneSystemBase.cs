@@ -21,6 +21,8 @@
 */
 
 using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 using Serilog;
 
@@ -30,6 +32,7 @@ using dvmbridge.FNE.DMR;
 using vocoder;
 
 using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
 
 namespace dvmbridge
 {
@@ -126,8 +129,13 @@ namespace dvmbridge
         public const int SAMPLE_RATE = 8000;
         public const int BITS_PER_SECOND = 16;
 
-        private const int AUDIO_BUFFER_MS = 35;
-        private const int AUDIO_NO_BUFFERS = 3;
+        private const int AUDIO_BUFFER_MS = 20;
+        private const int AUDIO_NO_BUFFERS = 2;
+        private const int DMR_AUDIO_DROP_MS = 60;
+        private const int P25_AUDIO_DROP_MS = 180;
+
+        private const int TX_MODE_DMR = 1;
+        private const int TX_MODE_P25 = 2;
 
         protected FneBase fne;
 
@@ -136,8 +144,20 @@ namespace dvmbridge
         private WaveFormat waveFormat;                 //
         private BufferedWaveProvider waveProvider;     //
 
-        private WaveIn waveIn;
+        private Task waveInRecorder;
+        private WaveInEvent waveIn;
+
+        private Stopwatch dropAudio;
+        bool audioDetect;
+
+        private BufferedWaveProvider meterInternalBuffer;
+        private SampleChannel sampleChannel;
+        private MeteringSampleProvider meterProvider;
+
         private WaveOut waveOut;
+
+        private Random rand;
+        private uint txStreamId;
 
         /*
         ** Properties
@@ -207,6 +227,8 @@ namespace dvmbridge
         {
             this.fne = fne;
 
+            this.rand = new Random(Guid.NewGuid().GetHashCode());
+
             // initialize slot statuses
             this.status = new SlotStatus[3];
             this.status[0] = new SlotStatus();  // DMR Slot 1
@@ -252,6 +274,9 @@ namespace dvmbridge
                 }
             };
 
+            this.dropAudio = new Stopwatch();
+            this.audioDetect = false;
+
             this.waveFormat = new WaveFormat(SAMPLE_RATE, BITS_PER_SECOND, 1);
 
             // initialize the output audio provider
@@ -265,27 +290,108 @@ namespace dvmbridge
             // initialize the primary input audio provider
             if (Program.WaveInDevice != -1)
             {
-                this.waveIn = new WaveIn();
-                this.waveIn.WaveFormat = waveFormat;
-                this.waveIn.DeviceNumber = Program.WaveInDevice;
-                this.waveIn.BufferMilliseconds = AUDIO_BUFFER_MS;
-                this.waveIn.NumberOfBuffers = AUDIO_NO_BUFFERS;
+                this.meterInternalBuffer = new BufferedWaveProvider(waveFormat);
+                this.meterInternalBuffer.DiscardOnBufferOverflow = true;
+                this.sampleChannel = new SampleChannel(meterInternalBuffer);
+                this.meterProvider = new MeteringSampleProvider(sampleChannel);
+                this.meterProvider.StreamVolume += MeterProvider_StreamVolume;
 
-                this.waveIn.StartRecording();
+                waveInRecorder = Task.Factory.StartNew(() =>
+                {
+                    this.waveIn = new WaveInEvent();
+                    this.waveIn.WaveFormat = waveFormat;
+                    this.waveIn.DeviceNumber = Program.WaveInDevice;
+                    this.waveIn.BufferMilliseconds = AUDIO_BUFFER_MS;
+                    this.waveIn.NumberOfBuffers = AUDIO_NO_BUFFERS;
+
+                    this.waveIn.DataAvailable += WaveIn_DataAvailable;
+
+                    this.waveIn.StartRecording();
+                });
             }
 
             // initialize DMR vocoders
             dmrDecoder = new MBEDecoderManaged(MBEMode.DMRAMBE);
             dmrDecoder.GainAdjust = Program.Configuration.AudioGain;
             dmrEncoder = new MBEEncoderManaged(MBEMode.DMRAMBE);
+            dmrEncoder.GainAdjust = Program.Configuration.AudioGain;
 
             // initialize P25 vocoders
             p25Decoder = new MBEDecoderManaged(MBEMode.IMBE);
             p25Decoder.GainAdjust = Program.Configuration.AudioGain;
             p25Encoder = new MBEEncoderManaged(MBEMode.IMBE);
+            p25Encoder.GainAdjust = Program.Configuration.AudioGain;
+
+            embeddedData = new EmbeddedData();
+            ambeBuffer = new byte[27];
 
             netLDU1 = new byte[9 * 25];
             netLDU2 = new byte[9 * 25];
+        }
+
+        /// <summary>
+        /// Event that occurs when wave audio is detected.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void MeterProvider_StreamVolume(object sender, StreamVolumeEventArgs e)
+        {
+            // handle Rx triggered by internal VOX
+            if (e.MaxSampleValues[0] > -40.0f)
+            {
+                audioDetect = true;
+                txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
+                dropAudio.Reset();
+            }
+            else
+            {
+                // if we've exceeded the audio drop timeout, then really drop the audio
+                int dropTimeMs = (Program.Configuration.TxMode == TX_MODE_P25) ? P25_AUDIO_DROP_MS : DMR_AUDIO_DROP_MS;
+                if (dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > dropTimeMs))
+                {
+                    audioDetect = false;
+                    dropAudio.Reset();
+
+                    txStreamId = 0;
+                    p25N = 0;
+                }
+
+                if (!dropAudio.IsRunning)
+                    dropAudio.Start();
+            }
+        }
+
+        /// <summary>
+        /// Event that occurs when wave audio data is available from the input device.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void WaveIn_DataAvailable(object sender, WaveInEventArgs e)
+        {
+            int samples = SampleTimeConvert.MSToSampleBytes(waveFormat, AUDIO_BUFFER_MS);
+            if (e.BytesRecorded == samples)
+            {
+                // add samples to the metering buffer
+                meterInternalBuffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
+
+                // trigger readback of metering buffer
+                float[] temp = new float[meterInternalBuffer.BufferedBytes];
+                this.meterProvider.Read(temp, 0, temp.Length);
+/*
+                if (audioDetect)
+                {
+                    switch (Program.Configuration.TxMode)
+                    {
+                        case TX_MODE_DMR:
+                            DMREncodeAudioFrame(e.Buffer);
+                            break;
+                        case TX_MODE_P25:
+                            P25EncodeAudioFrame(e.Buffer);
+                            break;
+                    }
+                }
+*/
+            }
         }
 
         /// <summary>
@@ -320,11 +426,20 @@ namespace dvmbridge
                 waveOut = null;
             }
 
-            if (this.waveIn != null)
+            if (waveInRecorder != null)
             {
-                waveIn.StopRecording();
-                waveIn.Dispose();
-                waveIn = null;
+                if (this.waveIn != null)
+                {
+                    waveIn.StopRecording();
+                    waveIn.Dispose();
+                    waveIn = null;
+                }
+
+                try
+                {
+                    waveInRecorder.GetAwaiter().GetResult();
+                }
+                catch (OperationCanceledException) { /* stub */ }
             }
         }
 

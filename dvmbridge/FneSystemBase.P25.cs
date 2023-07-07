@@ -38,11 +38,14 @@ namespace dvmbridge
     /// </summary>
     public abstract partial class FneSystemBase
     {
+        private const int P25_MSG_HDR_SIZE = 24;
+
         private MBEDecoderManaged p25Decoder;
         private MBEEncoderManaged p25Encoder;
 
         private byte[] netLDU1;
         private byte[] netLDU2;
+        private byte p25N = 0;
 
         /*
         ** Methods
@@ -72,6 +75,538 @@ namespace dvmbridge
         protected virtual void P25DataPreprocess(object sender, P25DataReceivedEvent e)
         {
             return;
+        }
+
+        /// <summary>
+        /// Creates an P25 frame message header.
+        /// </summary>
+        /// <param name="duid"></param>
+        /// <param name="data"></param>
+        private void CreateP25MessageHdr(byte duid, ref byte[] data)
+        {
+            FneUtils.StringToBytes(Constants.TAG_P25_DATA, data, 0, Constants.TAG_P25_DATA.Length);
+
+            data[4U] = P25Defines.LC_GROUP;                                                 // LCO
+
+            FneUtils.Write3Bytes((uint)Program.Configuration.SourceId, ref data, 5);        // Source Address
+            FneUtils.Write3Bytes((uint)Program.Configuration.DestinationId, ref data, 8);   // Destination Address
+
+            data[15U] = 0;                                                                  // MFId
+
+            data[20U] = 0;                                                                  // LSD 1
+            data[21U] = 0;                                                                  // LSD 2
+
+            data[22U] = duid;                                                               // DUID
+
+            data[180U] = 0;                                                                 // Frame Type
+        }
+
+        /// <summary>
+        /// Encode a logical link data unit 1.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="imbe"></param>
+        /// <param name="frameType"></param>
+        private void encodeLDU1(ref byte[] data, byte[] imbe, byte frameType)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+            if (imbe == null)
+                throw new ArgumentNullException("imbe");
+
+            // determine the LDU1 DFSI frame length, its variable
+            uint frameLength = P25DFSI.P25_DFSI_LDU1_VOICE1_FRAME_LENGTH_BYTES;
+            switch (frameType)
+            {
+                case P25DFSI.P25_DFSI_LDU1_VOICE1:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE1_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE2:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE2_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE3:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE3_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE4:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE4_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE5:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE5_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE6:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE6_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE7:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE7_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE8:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE8_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE9:
+                    frameLength = P25DFSI.P25_DFSI_LDU1_VOICE9_FRAME_LENGTH_BYTES;
+                    break;
+                default:
+                    return;
+            }
+
+            byte[] dfsiFrame = new byte[frameLength];
+
+            dfsiFrame[0U] = frameType;                                                      // Frame Type
+
+            uint dstId = (uint)Program.Configuration.DestinationId;
+            uint srcId = (uint)Program.Configuration.SourceId;
+
+            // different frame types mean different things
+            switch (frameType)
+            {
+                case P25DFSI.P25_DFSI_LDU1_VOICE2:
+                    {
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 1, 11);                        // IMBE
+                        dfsiFrame[12U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE3:
+                    {
+                        dfsiFrame[1U] = P25Defines.LC_GROUP;                                // LCO
+                        dfsiFrame[2U] = 0;                                                  // MFId
+                        dfsiFrame[3U] = 0;                                                  // Service Options
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE4:
+                    {
+                        dfsiFrame[1U] = (byte)((dstId >> 16) & 0xFFU);                      // Talkgroup Address
+                        dfsiFrame[2U] = (byte)((dstId >> 8) & 0xFFU);
+                        dfsiFrame[3U] = (byte)((dstId >> 0) & 0xFFU);
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE5:
+                    {
+                        dfsiFrame[1U] = (byte)((srcId >> 16) & 0xFFU);                      // Source Address
+                        dfsiFrame[2U] = (byte)((srcId >> 8) & 0xFFU);
+                        dfsiFrame[3U] = (byte)((srcId >> 0) & 0xFFU);
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE6:
+                    {
+                        dfsiFrame[1U] = 0;                                                  // RS (24,12,13)
+                        dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
+                        dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE7:
+                    {
+                        dfsiFrame[1U] = 0;                                                  // RS (24,12,13)
+                        dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
+                        dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE8:
+                    {
+                        dfsiFrame[1U] = 0;                                                  // RS (24,12,13)
+                        dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
+                        dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU1_VOICE9:
+                    {
+                        dfsiFrame[1U] = 0;                                                  // LSD MSB
+                        dfsiFrame[2U] = 0;                                                  // LSD LSB
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 4, 11);                        // IMBE
+                    }
+                    break;
+
+                case P25DFSI.P25_DFSI_LDU1_VOICE1:
+                default:
+                    {
+                        dfsiFrame[1U] = 0x02;                                               //
+                        dfsiFrame[2U] = P25DFSI.P25_DFSI_RT_ENABLED;                        // RT/RT Mode Flag
+                        dfsiFrame[3U] = P25DFSI.P25_DFSI_START_FLAG;                        // Start/Stop Flag
+                        dfsiFrame[4U] = P25DFSI.P25_DFSI_TYPE_VOICE;                        // Type Flag
+                        dfsiFrame[5U] = P25DFSI.P25_DFSI_DEF_ICW_SOURCE;                    // ICW Flag
+                        dfsiFrame[6U] = 0;                                                  // RSSI
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 10, 11);                       // IMBE
+                        dfsiFrame[21U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
+                    }
+                    break;
+            }
+
+            Buffer.BlockCopy(dfsiFrame, 0, data, 0, (int)frameLength);
+        }
+
+        /// <summary>
+        /// Creates an P25 LDU1 frame message.
+        /// </summary>
+        /// <param name="data"></param>
+        private void CreateP25LDU1Message(ref byte[] data)
+        {
+            // pack DFSI data
+            int count = P25_MSG_HDR_SIZE;
+            byte[] imbe = new byte[11];
+
+            Buffer.BlockCopy(netLDU1, 10, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE1);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE1_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU1, 26, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE2);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE2_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU1, 55, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE3);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE3_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU1, 80, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE4);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE4_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU1, 105, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE5);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE5_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU1, 130, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE6);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE6_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU1, 155, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE7);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE7_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU1, 180, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE8);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE8_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU1, 204, imbe, 0, 11);
+            encodeLDU1(ref data, imbe, P25DFSI.P25_DFSI_LDU1_VOICE9);
+            count += (int)P25DFSI.P25_DFSI_LDU1_VOICE9_FRAME_LENGTH_BYTES;
+
+            data[23U] = (byte)count;
+        }
+
+        /// <summary>
+        /// Encode a logical link data unit 2.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="imbe"></param>
+        /// <param name="frameType"></param>
+        private void encodeLDU2(ref byte[] data, byte[] imbe, byte frameType)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+            if (imbe == null)
+                throw new ArgumentNullException("imbe");
+
+            // determine the LDU2 DFSI frame length, its variable
+            uint frameLength = P25DFSI.P25_DFSI_LDU2_VOICE10_FRAME_LENGTH_BYTES;
+            switch (frameType)
+            {
+                case P25DFSI.P25_DFSI_LDU2_VOICE10:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE10_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE11:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE11_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE12:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE12_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE13:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE13_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE14:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE14_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE15:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE15_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE16:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE16_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE17:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE17_FRAME_LENGTH_BYTES;
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE18:
+                    frameLength = P25DFSI.P25_DFSI_LDU2_VOICE18_FRAME_LENGTH_BYTES;
+                    break;
+                default:
+                    return;
+            }
+
+            byte[] dfsiFrame = new byte[frameLength];
+
+            dfsiFrame[0U] = frameType;                                                      // Frame Type
+
+            // different frame types mean different things
+            switch (frameType)
+            {
+                case P25DFSI.P25_DFSI_LDU2_VOICE11:
+                    {
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 1, 11);                        // IMBE
+                        dfsiFrame[12U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE12:
+                    {
+                        dfsiFrame[1U] = 0;                                                  // Message Indicator
+                        dfsiFrame[2U] = 0;
+                        dfsiFrame[3U] = 0;
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE13:
+                    {
+                        dfsiFrame[1U] = 0;                                                  // Message Indicator
+                        dfsiFrame[2U] = 0;
+                        dfsiFrame[3U] = 0;
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE14:
+                    {
+                        dfsiFrame[1U] = 0;                                                  // Message Indicator
+                        dfsiFrame[2U] = 0;
+                        dfsiFrame[3U] = 0;
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE15:
+                    {
+                        dfsiFrame[1U] = 0x80;                                               // Algorithm ID
+                        dfsiFrame[2U] = 0;                                                  // Key ID
+                        dfsiFrame[3U] = 0;
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE16:
+                    {
+                        // first 3 bytes of frame are supposed to be
+                        // part of the RS(24, 16, 9) of the VOICE12, 13, 14, 15
+                        // control bytes
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE17:
+                    {
+                        // first 3 bytes of frame are supposed to be
+                        // part of the RS(24, 16, 9) of the VOICE12, 13, 14, 15
+                        // control bytes
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
+                    }
+                    break;
+                case P25DFSI.P25_DFSI_LDU2_VOICE18:
+                    {
+                        dfsiFrame[1U] = 0;                                                  // LSD MSB
+                        dfsiFrame[2U] = 0;                                                  // LSD LSB
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 4, 11);                        // IMBE
+                    }
+                    break;
+
+                case P25DFSI.P25_DFSI_LDU2_VOICE10:
+                default:
+                    {
+                        dfsiFrame[1U] = 0x02;                                               //
+                        dfsiFrame[2U] = P25DFSI.P25_DFSI_RT_ENABLED;                        // RT/RT Mode Flag
+                        dfsiFrame[3U] = P25DFSI.P25_DFSI_START_FLAG;                        // Start/Stop Flag
+                        dfsiFrame[4U] = P25DFSI.P25_DFSI_TYPE_VOICE;                        // Type Flag
+                        dfsiFrame[5U] = P25DFSI.P25_DFSI_DEF_ICW_SOURCE;                    // ICW Flag
+                        dfsiFrame[6U] = 0;                                                  // RSSI
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 10, 11);                       // IMBE
+                        dfsiFrame[21U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
+                    }
+                    break;
+            }
+
+            Buffer.BlockCopy(dfsiFrame, 0, data, 0, (int)frameLength);
+        }
+
+        /// <summary>
+        /// Creates an P25 LDU2 frame message.
+        /// </summary>
+        /// <param name="data"></param>
+        private void CreateP25LDU2Message(ref byte[] data)
+        {
+            // pack DFSI data
+            int count = P25_MSG_HDR_SIZE;
+            byte[] imbe = new byte[11];
+
+            Buffer.BlockCopy(netLDU2, 10, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE10);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE10_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU2, 26, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE11);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE11_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU2, 55, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE12);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE12_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU2, 80, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE13);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE13_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU2, 105, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE14);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE14_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU2, 130, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE15);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE15_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU2, 155, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE16);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE16_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU2, 180, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE17);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE17_FRAME_LENGTH_BYTES;
+
+            Buffer.BlockCopy(netLDU2, 204, imbe, 0, 11);
+            encodeLDU2(ref data, imbe, P25DFSI.P25_DFSI_LDU2_VOICE18);
+            count += (int)P25DFSI.P25_DFSI_LDU2_VOICE18_FRAME_LENGTH_BYTES;
+
+            data[23U] = (byte)count;
+        }
+
+        /// <summary>
+        /// Helper to encode and transmit PCM audio as P25 IMBE frames.
+        /// </summary>
+        /// <param name="pcm"></param>
+        private void P25EncodeAudioFrame(byte[] pcm)
+        {
+            if (p25N > 17)
+                p25N = 0;
+            if (p25N == 0)
+                FneUtils.Memset(netLDU1, 0, 9 * 25);
+            if (p25N == 9)
+                FneUtils.Memset(netLDU2, 0, 9 * 25);
+
+            // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
+
+            int smpIdx = 0;
+            short[] samples = new short[160];
+            for (int pcmIdx = 0; pcmIdx < pcm.Length; pcmIdx += 2)
+            {
+                samples[smpIdx] = (short)((pcm[pcmIdx + 1] << 8) + pcm[pcmIdx + 0]);
+                smpIdx++;
+            }
+
+            // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
+
+            // encode PCM samples into IMBE codewords
+            byte[] imbe = null;
+            p25Encoder.encode(samples, out imbe);
+            // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
+
+            // fill the LDU buffers appropriately
+            switch (p25N)
+            {
+                // LDU1
+                case 0:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 10, 11);
+                    break;
+                case 1:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 26, 11);
+                    break;
+                case 2:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 55, 11);
+                    break;
+                case 3:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 80, 11);
+                    break;
+                case 4:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 105, 11);
+                    break;
+                case 5:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 130, 11);
+                    break;
+                case 6:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 155, 11);
+                    break;
+                case 7:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 180, 11);
+                    break;
+                case 8:
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 204, 11);
+                    break;
+
+                // LDU2
+                case 9:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 10, 11);
+                    break;
+                case 10:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 26, 11);
+                    break;
+                case 11:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 55, 11);
+                    break;
+                case 12:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 80, 11);
+                    break;
+                case 13:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 105, 11);
+                    break;
+                case 14:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 130, 11);
+                    break;
+                case 15:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 155, 11);
+                    break;
+                case 16:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 180, 11);
+                    break;
+                case 17:
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 204, 11);
+                    break;
+            }
+
+            uint srcId = (uint)Program.Configuration.SourceId;
+            uint dstId = (uint)Program.Configuration.DestinationId;
+
+            FnePeer peer = (FnePeer)fne;
+            ushort pktSeq = peer.pktSeq(true);
+
+            // send P25 LDU1
+            if (p25N == 8U)
+            {
+                Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
+
+                byte[] payload = new byte[194];
+                CreateP25MessageHdr((byte)P25DUID.LDU1, ref payload);
+                CreateP25LDU1Message(ref payload);
+
+                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq);
+            }
+
+            // send P25 LDU2
+            if (p25N == 17U)
+            {
+                Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
+
+                byte[] payload = new byte[179];
+                CreateP25MessageHdr((byte)P25DUID.LDU2, ref payload);
+                CreateP25LDU2Message(ref payload);
+
+                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq);
+            }
+
+            p25N++;
         }
 
         /// <summary>

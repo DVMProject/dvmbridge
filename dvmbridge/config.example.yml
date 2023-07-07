@@ -10,6 +10,8 @@ pingTime: 5
 rawPacketTrace: false
 # Audio gain for received audio frames.
 audioGain: 3.0
+# Audio transmit mode (1 - DMR, 2 - P25).
+txMode: 1
 
 #
 # Logging Configuration

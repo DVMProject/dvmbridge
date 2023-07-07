@@ -66,4 +66,19 @@ namespace dvmbridge.FNE.DMR
         /// </summary>
         RATE_1_DATA = 0x0A,
     } // public enum DMRDataType : byte
+
+    /// <summary>
+    /// DMR Full-Link Opcodes
+    /// </summary>
+    public enum DMRFLCO : byte
+    {
+        /// <summary>
+        /// GRP VCH USER - Group Voice Channel User
+        /// </summary>
+        FLCO_GROUP = 0x00,
+        /// <summary>
+        /// UU VCH USER - Unit-to-Unit Voice Channel User
+        /// </summary>
+        FLCO_PRIVATE = 0x01,
+    } // public enum DMRFLCO : byte
 } // namespace dvmbridge.FNE.DMR

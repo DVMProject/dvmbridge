@@ -78,6 +78,11 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
+        public int TxMode;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public string Name;
         /// <summary>
         /// 

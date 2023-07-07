@@ -11,7 +11,7 @@
 // Licensed under the GPLv2 License (https://opensource.org/licenses/GPL-2.0)
 //
 /*
-*   Copyright (C) 2022 by Bryan Biedenkapp N2PLL
+*   Copyright (C) 2022-2023 by Bryan Biedenkapp N2PLL
 *
 *   This program is free software: you can redistribute it and/or modify
 *   it under the terms of the GNU Affero General Public License as published by
@@ -125,14 +125,52 @@ namespace dvmbridge.FNE.DMR
 
             FID = bytes[1U];
 
-            Emergency = (bytes[2U] & 0x80U) == 0x80U;                                 // Emergency Flag
-            Encrypted = (bytes[2U] & 0x40U) == 0x40U;                                 // Encryption Flag
-            Broadcast = (bytes[2U] & 0x08U) == 0x08U;                                 // Broadcast Flag
-            OVCM = (bytes[2U] & 0x04U) == 0x04U;                                      // OVCM Flag
-            Priority = (byte)(bytes[2U] & 0x03U);                                     // Priority
+            Emergency = (bytes[2U] & 0x80U) == 0x80U;                               // Emergency Flag
+            Encrypted = (bytes[2U] & 0x40U) == 0x40U;                               // Encryption Flag
+            Broadcast = (bytes[2U] & 0x08U) == 0x08U;                               // Broadcast Flag
+            OVCM = (bytes[2U] & 0x04U) == 0x04U;                                    // OVCM Flag
+            Priority = (byte)(bytes[2U] & 0x03U);                                   // Priority
 
-            DstId = (uint)(bytes[3U] << 16 | bytes[4U] << 8 | bytes[5U]);             // Destination Address
-            SrcId = (uint)(bytes[6U] << 16 | bytes[7U] << 8 | bytes[8U]);             // Source Address
+            DstId = (uint)(bytes[3U] << 16 | bytes[4U] << 8 | bytes[5U]);           // Destination Address
+            SrcId = (uint)(bytes[6U] << 16 | bytes[7U] << 8 | bytes[8U]);           // Source Address
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LC"/> class.
+        /// </summary>
+        /// <param name="bits"></param>
+        public LC(bool[] bits)
+        {
+            PF = bits[0U];
+            R = bits[1U];
+
+            byte temp1 = 0, temp2 = 0, temp3 = 0;
+            FneUtils.BitsToByteBE(bits, 0, ref temp1);
+            FLCO = (byte)(temp1 & 0x3FU);
+
+            FneUtils.BitsToByteBE(bits, 8, ref temp2);
+            FID = temp2;
+
+            FneUtils.BitsToByteBE(bits, 16, ref temp3);
+
+            Emergency = (temp3 & 0x80U) == 0x80U;                                   // Emergency Flag
+            Encrypted = (temp3 & 0x40U) == 0x40U;                                   // Encryption Flag
+            Broadcast = (temp3 & 0x08U) == 0x08U;                                   // Broadcast Flag
+            OVCM = (temp3 & 0x04U) == 0x04U;                                        // OVCM Flag
+            Priority = (byte)(temp3 & 0x03U);                                       // Priority
+
+            byte d1 = 0, d2 = 0, d3 = 0;
+            FneUtils.BitsToByteBE(bits, 24, ref d1);
+            FneUtils.BitsToByteBE(bits, 32, ref d2);
+            FneUtils.BitsToByteBE(bits, 40, ref d3);
+
+            byte s1 = 0, s2 = 0, s3 = 0;
+            FneUtils.BitsToByteBE(bits, 48, ref s1);
+            FneUtils.BitsToByteBE(bits, 56, ref s2);
+            FneUtils.BitsToByteBE(bits, 64, ref s3);
+
+            SrcId = (uint)(s1 << 16 | s2 << 8 | s3);                                // Source Address
+            DstId = (uint)(d1 << 16 | d2 << 8 | d3);                                // Destination Address
         }
 
         /// <summary>
@@ -180,5 +218,28 @@ namespace dvmbridge.FNE.DMR
             bytes[7U] = (byte)(SrcId >> 8);                                           // ..
             bytes[8U] = (byte)(SrcId >> 0);                                           // ..
         }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="bits"></param>
+        public void GetData(ref bool[] bits)
+        {
+            if (bits == null)
+                throw new NullReferenceException("bits");
+
+            byte[] bytes = new byte[9U];
+            GetData(ref bytes);
+
+            FneUtils.ByteToBitsBE(bytes[0U], ref bits, 0);
+            FneUtils.ByteToBitsBE(bytes[1U], ref bits, 8);
+            FneUtils.ByteToBitsBE(bytes[2U], ref bits, 16);
+            FneUtils.ByteToBitsBE(bytes[3U], ref bits, 24);
+            FneUtils.ByteToBitsBE(bytes[4U], ref bits, 32);
+            FneUtils.ByteToBitsBE(bytes[5U], ref bits, 40);
+            FneUtils.ByteToBitsBE(bytes[6U], ref bits, 48);
+            FneUtils.ByteToBitsBE(bytes[7U], ref bits, 56);
+            FneUtils.ByteToBitsBE(bytes[8U], ref bits, 64);
+        }    
     } // public class LC
 } // namespace dvmbridge.FNE.DMR

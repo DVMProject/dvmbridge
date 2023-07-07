@@ -22,7 +22,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Threading;
 
 using Serilog;
 
@@ -41,8 +41,20 @@ namespace dvmbridge
         private const int DMR_AMBE_LENGTH_BYTES = 27;
         private const int AMBE_PER_SLOT = 3;
 
+        private static readonly byte[] DMR_SILENCE_DATA = { 0x01, 0x00,
+            0xB9, 0xE8, 0x81, 0x52, 0x61, 0x73, 0x00, 0x2A, 0x6B, 0xB9, 0xE8,
+            0x81, 0x52, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x73, 0x00,
+            0x2A, 0x6B, 0xB9, 0xE8, 0x81, 0x52, 0x61, 0x73, 0x00, 0x2A, 0x6B };
+
         private MBEDecoderManaged dmrDecoder;
         private MBEEncoderManaged dmrEncoder;
+
+        private EmbeddedData embeddedData;
+
+        private byte[] ambeBuffer;
+        private int ambeCount = 0;
+        private int dmrSeqNo = 0;
+        private byte dmrN = 0;
 
         /*
         ** Methods
@@ -63,6 +75,193 @@ namespace dvmbridge
         protected virtual bool DMRDataValidate(uint peerId, uint srcId, uint dstId, byte slot, CallType callType, FrameType frameType, DMRDataType dataType, uint streamId)
         {
             return true;
+        }
+
+        /// <summary>
+        /// Creates an DMR frame message.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="frameType"></param>
+        /// <param name="n"></param>
+        private void CreateDMRMessage(ref byte[] data, FrameType frameType, byte seqNo, byte n)
+        {
+            FneUtils.StringToBytes(Constants.TAG_DMR_DATA, data, 0, Constants.TAG_DMR_DATA.Length);
+
+            FneUtils.Write3Bytes((uint)Program.Configuration.SourceId, ref data, 5);        // Source Address
+            FneUtils.Write3Bytes((uint)Program.Configuration.DestinationId, ref data, 8);   // Destination Address
+
+            data[15U] = (byte)((Program.Configuration.Slot == 1) ? 0x00 : 0x80);            // Slot Number
+            data[15U] |= 0x00;                                                              // Group
+
+            if (frameType == FrameType.VOICE_SYNC)
+                data[15U] |= 0x10;
+            else if (frameType == FrameType.VOICE)
+                data[15U] |= n;
+            else
+                data[15U] |= (byte)(0x20 | (byte)frameType);
+
+            data[4U] = seqNo;
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        private void CreateDMRTerminator()
+        {
+            byte n = (byte)((dmrSeqNo - 3U) % 6U);
+            uint fill = 6U - n;
+
+            FnePeer peer = (FnePeer)fne;
+            ushort pktSeq = peer.pktSeq(true);
+
+            byte[] data = null;
+            if (n > 0U) {
+                for (uint i = 0U; i < fill; i++) {
+
+                    // generate DMR AMBE data
+                    data = new byte[33];
+                    Buffer.BlockCopy(DMR_SILENCE_DATA, 0, data, 0, 33);
+
+                    byte lcss = embeddedData.GetData(ref data, dmrN);
+
+                    // generated embedded signalling
+                    EMB emb = new EMB();
+                    emb.ColorCode = 0;
+                    emb.LCSS = lcss;
+                    emb.Encode(ref data);
+
+                    CreateDMRMessage(ref data, FrameType.DATA_SYNC, (byte)dmrSeqNo, n);
+                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq);
+
+                    dmrSeqNo++;
+                    n++;
+
+                    Thread.Sleep(60);
+                }
+            }
+
+            data = new byte[33];
+
+            // generate DMR LC
+            LC dmrLC = new LC();
+            dmrLC.FLCO = (byte)DMRFLCO.FLCO_GROUP;
+            dmrLC.SrcId = (uint)Program.Configuration.SourceId;
+            dmrLC.DstId = (uint)Program.Configuration.DestinationId;
+
+            // generate the Slot TYpe
+            SlotType slotType = new SlotType();
+            slotType.DataType = (byte)DMRDataType.TERMINATOR_WITH_LC;
+            slotType.GetData(ref data);
+
+            FullLC.Encode(dmrLC, ref data, DMRDataType.TERMINATOR_WITH_LC);
+
+
+            CreateDMRMessage(ref data, FrameType.DATA_SYNC, (byte)dmrSeqNo, 0);
+
+            peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq);
+
+            ambeCount = 0;
+            dmrSeqNo = 0;
+            dmrN = 0;
+        }
+
+        /// <summary>
+        /// Helper to encode and transmit PCM audio as DMR AMBE frames.
+        /// </summary>
+        /// <param name="pcm"></param>
+        private void DMREncodeAudioFrame(byte[] pcm)
+        {
+            uint srcId = (uint)Program.Configuration.SourceId;
+            uint dstId = (uint)Program.Configuration.DestinationId;
+
+            byte[] data = null;
+            if (ambeCount == AMBE_PER_SLOT)
+            {
+                FnePeer peer = (FnePeer)fne;
+                ushort pktSeq = peer.pktSeq(true);
+
+                // is this the intitial sequence?
+                if (dmrSeqNo == 0)
+                {
+                    // send DMR voice header
+                    data = new byte[33];
+
+                    // generate DMR LC
+                    LC dmrLC = new LC();
+                    dmrLC.FLCO = (byte)DMRFLCO.FLCO_GROUP;
+                    dmrLC.SrcId = (uint)Program.Configuration.SourceId;
+                    dmrLC.DstId = (uint)Program.Configuration.DestinationId;
+                    embeddedData.SetLC(dmrLC);
+
+                    // generate the Slot TYpe
+                    SlotType slotType = new SlotType();
+                    slotType.DataType = (byte)DMRDataType.VOICE_LC_HEADER;
+                    slotType.GetData(ref data);
+
+                    FullLC.Encode(dmrLC, ref data, DMRDataType.VOICE_LC_HEADER);
+
+                    CreateDMRMessage(ref data, FrameType.VOICE_SYNC, (byte)dmrSeqNo, 0);
+
+                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq);
+
+                    dmrSeqNo++;
+                    Thread.Sleep(60);
+                }
+
+                // send DMR voice
+                data = new byte[33];
+
+                Buffer.BlockCopy(ambeBuffer, 0, data, 0, 13);
+                data[13U] = (byte)(ambeBuffer[13U] & 0xF0);
+                data[19U] = (byte)(ambeBuffer[13U] & 0x0F);
+                Buffer.BlockCopy(ambeBuffer, 14, data, 20, 13);
+
+                FrameType frameType = FrameType.VOICE_SYNC;
+                if (dmrN == 0)
+                    frameType = FrameType.VOICE_SYNC;
+                else
+                {
+                    frameType = FrameType.VOICE;
+
+                    byte lcss = embeddedData.GetData(ref data, dmrN);
+
+                    // generated embedded signalling
+                    EMB emb = new EMB();
+                    emb.ColorCode = 0;
+                    emb.LCSS = lcss;
+                    emb.Encode(ref data);
+                }
+
+                CreateDMRMessage(ref data, frameType, (byte)dmrSeqNo, dmrN);
+
+                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq);
+
+                dmrSeqNo++;
+                Thread.Sleep(60);
+
+                FneUtils.Memset(ambeBuffer, 0, 27);
+                ambeCount = 0;
+            }
+
+            // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
+
+            int smpIdx = 0;
+            short[] samples = new short[160];
+            for (int pcmIdx = 0; pcmIdx < pcm.Length; pcmIdx += 2)
+            {
+                samples[smpIdx] = (short)((pcm[pcmIdx + 1] << 8) + pcm[pcmIdx + 0]);
+                smpIdx++;
+            }
+
+            // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
+
+            // encode PCM samples into AMBE codewords
+            byte[] ambe = null;
+            dmrEncoder.encode(samples, out ambe);
+            // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
+
+            Buffer.BlockCopy(ambe, 0, ambeBuffer, ambeCount * 9, 9);
+            ambeCount++;
         }
 
         /// <summary>
@@ -111,8 +310,8 @@ namespace dvmbridge
         {
             DateTime pktTime = DateTime.Now;
             
-            byte[] dmrpkt = new byte[33];
-            Buffer.BlockCopy(e.Data, 20, dmrpkt, 0, 33);
+            byte[] data = new byte[33];
+            Buffer.BlockCopy(e.Data, 20, data, 0, 33);
             byte bits = e.Data[15];
 
             if (e.CallType == CallType.GROUP)
@@ -136,7 +335,7 @@ namespace dvmbridge
                     // if we can, use the LC from the voice header as to keep all options intact
                     if ((e.FrameType == FrameType.DATA_SYNC) && (e.DataType == DMRDataType.VOICE_LC_HEADER))
                     {
-                        LC lc = FullLC.Decode(dmrpkt, DMRDataType.VOICE_LC_HEADER);
+                        LC lc = FullLC.Decode(data, DMRDataType.VOICE_LC_HEADER);
                         status[e.Slot].DMR_RxLC = lc;
                     }
                     else // if we don't have a voice header; don't wait to decode it, just make a dummy header
@@ -153,7 +352,7 @@ namespace dvmbridge
                 // if we can, use the PI LC from the PI voice header as to keep all options intact
                 if ((e.FrameType == FrameType.DATA_SYNC) && (e.DataType == DMRDataType.VOICE_PI_HEADER))
                 {
-                    PrivacyLC lc = FullLC.DecodePI(dmrpkt);
+                    PrivacyLC lc = FullLC.DecodePI(data);
                     status[e.Slot].DMR_RxPILC = lc;
                     Log.Logger.Information($"({SystemName}) DMRD: Traffic *CALL PI PARAMS  * PEER {e.PeerId} DST_ID {e.DstId} TS {e.Slot + 1} ALGID {lc.AlgId} KID {lc.KId} [STREAM ID {e.StreamId}]");
                     Log.Logger.Debug($"({SystemName}) TS {e.Slot + 1} [STREAM ID {e.StreamId}] RX_PI_LC {FneUtils.HexDump(status[e.Slot].DMR_RxPILC.GetBytes())}");
@@ -168,10 +367,10 @@ namespace dvmbridge
                 if (e.FrameType == FrameType.VOICE_SYNC || e.FrameType == FrameType.VOICE)
                 {
                     byte[] ambe = new byte[DMR_AMBE_LENGTH_BYTES];
-                    Buffer.BlockCopy(dmrpkt, 0, ambe, 0, 14);
+                    Buffer.BlockCopy(data, 0, ambe, 0, 14);
                     ambe[13] &= 0xF0;
-                    ambe[13] |= (byte)(dmrpkt[19] & 0x0F);
-                    Buffer.BlockCopy(dmrpkt, 20, ambe, 14, 13);
+                    ambe[13] |= (byte)(data[19] & 0x0F);
+                    Buffer.BlockCopy(data, 20, ambe, 14, 13);
                     DMRDecodeAudioFrame(ambe, e);
                 }
 

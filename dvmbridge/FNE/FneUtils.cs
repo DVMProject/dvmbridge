@@ -216,11 +216,11 @@ namespace dvmbridge.FNE
         /// Write the given bytes in the unsigned integer into the given buffer (by most significant byte)
         /// </summary>
         /// <param name="val"></param>
-        public static void Write3Bytes(uint val, ref byte byte1, ref byte byte2, ref byte byte3)
+        public static void Write3Bytes(uint val, ref byte[] buffer, int offset)
         {
-            byte1 = (byte)((val >> 16) & 0xFF);
-            byte2 = (byte)((val >> 8) & 0xFF);
-            byte3 = (byte)(val & 0xFF);
+            buffer[offset + 0] = (byte)((val >> 16) & 0xFF);
+            buffer[offset + 1] = (byte)((val >> 8) & 0xFF);
+            buffer[offset + 2] = (byte)(val & 0xFF);
         }
 
         /// <summary>

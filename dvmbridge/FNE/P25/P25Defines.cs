@@ -25,6 +25,67 @@ using System;
 namespace dvmbridge.FNE.P25
 {
     /// <summary>
+    /// P25 DFSI Frame Types
+    /// </summary>
+    public class P25DFSI
+    {
+        public const uint P25_DFSI_LDU1_VOICE1_FRAME_LENGTH_BYTES = 22;
+        public const uint P25_DFSI_LDU1_VOICE2_FRAME_LENGTH_BYTES = 14;
+        public const uint P25_DFSI_LDU1_VOICE3_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU1_VOICE4_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU1_VOICE5_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU1_VOICE6_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU1_VOICE7_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU1_VOICE8_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU1_VOICE9_FRAME_LENGTH_BYTES = 16;
+
+        public const uint P25_DFSI_LDU2_VOICE10_FRAME_LENGTH_BYTES = 22;
+        public const uint P25_DFSI_LDU2_VOICE11_FRAME_LENGTH_BYTES = 14;
+        public const uint P25_DFSI_LDU2_VOICE12_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU2_VOICE13_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU2_VOICE14_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU2_VOICE15_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU2_VOICE16_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU2_VOICE17_FRAME_LENGTH_BYTES = 17;
+        public const uint P25_DFSI_LDU2_VOICE18_FRAME_LENGTH_BYTES = 16;
+
+        public const byte P25_DFSI_STATUS_NO_ERROR = 0x00;   //
+        public const byte P25_DFSI_STATUS_ERASE = 0x02;      //
+
+        public const byte P25_DFSI_RT_ENABLED = 0x02;        //
+        public const byte P25_DFSI_RT_DISABLED = 0x04;       //
+
+        public const byte P25_DFSI_START_FLAG = 0x0C;        //
+        public const byte P25_DFSI_STOP_FLAG = 0x25;         //
+
+        public const byte P25_DFSI_TYPE_DATA_PAYLOAD = 0x06; //
+        public const byte P25_DFSI_TYPE_VOICE = 0x0B;        //
+
+        public const byte P25_DFSI_DEF_ICW_SOURCE = 0x00;    // Infrastructure Source - Default Source
+        public const byte P25_DFSI_DEF_SOURCE = 0x00;        //
+
+        public const byte P25_DFSI_LDU1_VOICE1 = 0x62;       // IMBE LDU1 - Voice 1
+        public const byte P25_DFSI_LDU1_VOICE2 = 0x63;       // IMBE LDU1 - Voice 2
+        public const byte P25_DFSI_LDU1_VOICE3 = 0x64;       // IMBE LDU1 - Voice 3 + Link Control
+        public const byte P25_DFSI_LDU1_VOICE4 = 0x65;       // IMBE LDU1 - Voice 4 + Link Control
+        public const byte P25_DFSI_LDU1_VOICE5 = 0x66;       // IMBE LDU1 - Voice 5 + Link Control
+        public const byte P25_DFSI_LDU1_VOICE6 = 0x67;       // IMBE LDU1 - Voice 6 + Link Control
+        public const byte P25_DFSI_LDU1_VOICE7 = 0x68;       // IMBE LDU1 - Voice 7 + Link Control
+        public const byte P25_DFSI_LDU1_VOICE8 = 0x69;       // IMBE LDU1 - Voice 8 + Link Control
+        public const byte P25_DFSI_LDU1_VOICE9 = 0x6A;       // IMBE LDU1 - Voice 9 + Low Speed Data
+
+        public const byte P25_DFSI_LDU2_VOICE10 = 0x6B;      // IMBE LDU2 - Voice 10
+        public const byte P25_DFSI_LDU2_VOICE11 = 0x6C;      // IMBE LDU2 - Voice 11
+        public const byte P25_DFSI_LDU2_VOICE12 = 0x6D;      // IMBE LDU2 - Voice 12 + Encryption Sync
+        public const byte P25_DFSI_LDU2_VOICE13 = 0x6E;      // IMBE LDU2 - Voice 13 + Encryption Sync
+        public const byte P25_DFSI_LDU2_VOICE14 = 0x6F;      // IMBE LDU2 - Voice 14 + Encryption Sync
+        public const byte P25_DFSI_LDU2_VOICE15 = 0x70;      // IMBE LDU2 - Voice 15 + Encryption Sync
+        public const byte P25_DFSI_LDU2_VOICE16 = 0x71;      // IMBE LDU2 - Voice 16 + Encryption Sync
+        public const byte P25_DFSI_LDU2_VOICE17 = 0x72;      // IMBE LDU2 - Voice 17 + Encryption Sync
+        public const byte P25_DFSI_LDU2_VOICE18 = 0x73;      // IMBE LDU2 - Voice 18 + Low Speed Data
+    } // public class P25DSFI_FT
+
+    /// <summary>
     /// P25 Data Unit ID
     /// </summary>
     public enum P25DUID : byte
