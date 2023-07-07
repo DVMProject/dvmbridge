@@ -601,15 +601,16 @@ namespace dvmbridge
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             FnePeer peer = (FnePeer)fne;
-            ushort pktSeq = 0;
-            if (p25SeqNo == 0U)
-                pktSeq = peer.pktSeq(true);
-            else
-                pktSeq = peer.pktSeq();
 
             // send P25 LDU1
             if (p25N == 8U)
             {
+                ushort pktSeq = 0;
+                if (p25SeqNo == 0U)
+                    pktSeq = peer.pktSeq(true);
+                else
+                    pktSeq = peer.pktSeq();
+
                 Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                 byte[] payload = new byte[200];
@@ -622,6 +623,12 @@ namespace dvmbridge
             // send P25 LDU2
             if (p25N == 17U)
             {
+                ushort pktSeq = 0;
+                if (p25SeqNo == 0U)
+                    pktSeq = peer.pktSeq(true);
+                else
+                    pktSeq = peer.pktSeq();
+
                 Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                 byte[] payload = new byte[200];
