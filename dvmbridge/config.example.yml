@@ -58,9 +58,9 @@ longitude: 0.0
 #
 location: Anywhere, USA
 
-# Source ID for transmitted audio frames
+# Source "Radio ID" for transmitted audio frames.
 sourceId: 1234567
-# Destination ID for received/transmitted audio frames
+# Talkgroup ID for audio transmitted/received audio frames
 destinationId: 1
 # Slot for received/transmitted audio frames
 slot: 1
