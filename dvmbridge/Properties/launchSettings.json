@@ -1,8 +1,9 @@
 {
   "profiles": {
-    "fnerouter": {
+    "dvmbridge": {
       "commandName": "Project",
-      "commandLineArgs": "-c config.example.yml --log-on-console"
+      "commandLineArgs": "-l -c test-config.yml -o0",
+      "nativeDebugging": true
     }
   }
 }

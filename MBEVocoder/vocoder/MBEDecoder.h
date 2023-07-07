@@ -88,6 +88,8 @@ namespace vocoder
         ~MBEDecoder();
 
         /// <summary>Decodes the given MBE codewords to PCM samples using the decoder mode.</summary>
+        int32_t decodeF(uint8_t* codeword, float samples[]);
+        /// <summary>Decodes the given MBE codewords to PCM samples using the decoder mode.</summary>
         int32_t decode(uint8_t* codeword, int16_t samples[]);
 
     private:

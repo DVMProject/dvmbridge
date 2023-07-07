@@ -109,83 +109,97 @@ MBEDecoder::~MBEDecoder()
 /// <param name="codeword"></param>
 /// <param name="samples"></param>
 /// <returns></returns>
-int32_t MBEDecoder::decode(uint8_t* codeword, int16_t samples[])
+int32_t MBEDecoder::decodeF(uint8_t* codeword, float samples[])
 {
-    float audioOutBuf[160U];
-    ::memset(audioOutBuf, 0x00U, 160U);
     int32_t errs = 0;
-
     switch (m_mbeMode)
     {
     case DECODE_DMR_AMBE:
-        {
-            char ambe_d[49U];
-            char ambe_fr[4][24];
-            ::memset(ambe_d, 0x00U, 49U);
-            ::memset(ambe_fr, 0x00U, 96U);
+    {
+        char ambe_d[49U];
+        char ambe_fr[4][24];
+        ::memset(ambe_d, 0x00U, 49U);
+        ::memset(ambe_fr, 0x00U, 96U);
 
-            const int* w, *x, *y, *z;
+        const int* w, * x, * y, * z;
 
-            w = rW;
-            x = rX;
-            y = rY;
-            z = rZ;
+        w = rW;
+        x = rX;
+        y = rY;
+        z = rZ;
 
-            for (int i = 0; i < 9; ++i) {
-                for (int j = 0; j < 8; j += 2) {
-                    ambe_fr[*y][*z] = (1 & (codeword[i] >> (7 - (j + 1))));
-                    ambe_fr[*w][*x] = (1 & (codeword[i] >> (7 - j)));
-                    w++;
-                    x++;
-                    y++;
-                    z++;
-                }
+        for (int i = 0; i < 9; ++i) {
+            for (int j = 0; j < 8; j += 2) {
+                ambe_fr[*y][*z] = (1 & (codeword[i] >> (7 - (j + 1))));
+                ambe_fr[*w][*x] = (1 & (codeword[i] >> (7 - j)));
+                w++;
+                x++;
+                y++;
+                z++;
             }
-
-            int ambeErrs;
-            char ambeErrStr[64U];
-            ::memset(ambeErrStr, 0x20U, 64U);
-
-            mbe_processAmbe3600x2450FrameF(audioOutBuf, &ambeErrs, &errs, ambeErrStr, ambe_fr, ambe_d, m_mbelibParms->m_cur_mp, m_mbelibParms->m_prev_mp, m_mbelibParms->m_prev_mp_enhanced, 3);
         }
-        break;
+
+        int ambeErrs;
+        char ambeErrStr[64U];
+        ::memset(ambeErrStr, 0x20U, 64U);
+
+        mbe_processAmbe3600x2450FrameF(samples, &ambeErrs, &errs, ambeErrStr, ambe_fr, ambe_d, m_mbelibParms->m_cur_mp, m_mbelibParms->m_prev_mp, m_mbelibParms->m_prev_mp_enhanced, 3);
+    }
+    break;
 
     case DECODE_88BIT_IMBE:
-        {
-            char imbe_d[88U];
-            ::memset(imbe_d, 0x00U, 88U);
+    {
+        char imbe_d[88U];
+        ::memset(imbe_d, 0x00U, 88U);
 
-            for (int i = 0; i < 11; ++i) {
-                for (int j = 0; j < 8; j++) {
-                    imbe_d[j + (8 * i)] = (1 & (codeword[i] >> (7 - j)));
-                }
+        for (int i = 0; i < 11; ++i) {
+            for (int j = 0; j < 8; j++) {
+                imbe_d[j + (8 * i)] = (1 & (codeword[i] >> (7 - j)));
             }
-
-            int ambeErrs;
-            char ambeErrStr[64U];
-            ::memset(ambeErrStr, 0x20U, 64U);
-
-            mbe_processImbe4400DataF(audioOutBuf, &ambeErrs, &errs, ambeErrStr, imbe_d, m_mbelibParms->m_cur_mp, m_mbelibParms->m_prev_mp, m_mbelibParms->m_prev_mp_enhanced, 3);
         }
-        break;
+
+        int ambeErrs;
+        char ambeErrStr[64U];
+        ::memset(ambeErrStr, 0x20U, 64U);
+
+        mbe_processImbe4400DataF(samples, &ambeErrs, &errs, ambeErrStr, imbe_d, m_mbelibParms->m_cur_mp, m_mbelibParms->m_prev_mp, m_mbelibParms->m_prev_mp_enhanced, 3);
+    }
+    break;
     }
 
-    uint32_t sampleCnt = 0U;
+    return errs;
+}
+
+/// <summary>
+/// Decodes the given MBE codewords to PCM samples using the decoder mode.
+/// </summary>
+/// <param name="codeword"></param>
+/// <param name="samples"></param>
+/// <returns></returns>
+int32_t MBEDecoder::decode(uint8_t* codeword, int16_t samples[])
+{
+    float samplesF[160U];
+    ::memset(samplesF, 0x00U, 160U);
+    int32_t errs = decodeF(codeword, samplesF);
+
     int16_t* samplePtr = samples;
-    float* aoutBuffPtr = audioOutBuf;
+    float* sampleFPtr = samplesF;
     for (int n = 0; n < 160; n++) {
-        *aoutBuffPtr *= m_gainAdjust;
-        if (*aoutBuffPtr > static_cast<float>(32760)) {
-            *aoutBuffPtr = static_cast<float>(32760);
+        float smp = *sampleFPtr;
+        smp *= m_gainAdjust;
+
+        // audio clipping
+        if (smp > 32760) {
+            smp = 32760;
         }
-        else if (*aoutBuffPtr < static_cast<float>(-32760)) {
-            *aoutBuffPtr = static_cast<float>(-32760);
+        else if (smp < -32760) {
+            smp = -32760;
         }
 
-        *samplePtr = static_cast<short>(*aoutBuffPtr);
+        *samplePtr = (int16_t)(smp);
+        
         samplePtr++;
-        aoutBuffPtr++;
-        sampleCnt++;
+        sampleFPtr++;
     }
 
     return errs;

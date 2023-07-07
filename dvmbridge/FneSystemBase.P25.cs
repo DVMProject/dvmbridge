@@ -82,7 +82,6 @@ namespace dvmbridge
         private void P25DecodeAudioFrame(byte[] ldu, P25DataReceivedEvent e)
         {
             // decode 9 IMBE codewords into PCM samples
-            //short[][] samples = new short[9][];
             for (int n = 0; n < 9; n++)
             {
                 byte[] imbe = new byte[11];
@@ -122,10 +121,11 @@ namespace dvmbridge
                 if (samples != null)
                 {
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} VC{n} ERRS {errs} [STREAM ID {e.StreamId}]");
-                    // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
+                    Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
+                    Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
 
-                    byte[] pcm = new byte[samples.Length * 2];
                     int pcmIdx = 0;
+                    byte[] pcm = new byte[samples.Length * 2];
                     for (int smpIdx = 0; smpIdx < samples.Length; smpIdx++)
                     {
                         pcm[pcmIdx + 0] = (byte)(samples[smpIdx] & 0xFF);
@@ -133,7 +133,7 @@ namespace dvmbridge
                         pcmIdx += 2;
                     }
 
-                    // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
+                    Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
                     waveProvider.AddSamples(pcm, 0, pcm.Length);
                 }
             }
