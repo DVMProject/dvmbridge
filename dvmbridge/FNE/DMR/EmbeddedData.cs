@@ -76,8 +76,8 @@ namespace dvmbridge.FNE.DMR
             IsValid = false;
             FLCO = (byte)DMRFLCO.FLCO_GROUP;
             state = EmbeddedLCState.LCS_NONE;
-            data = null;
-            raw = null;
+            data = new bool[72];
+            raw = new bool[128];
         }
 
         /// <summary>

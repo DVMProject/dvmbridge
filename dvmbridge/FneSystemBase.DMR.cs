@@ -175,6 +175,7 @@ namespace dvmbridge
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             byte[] data = null;
+            dmrN = (byte)(dmrSeqNo % 6);
             if (ambeCount == AMBE_PER_SLOT)
             {
                 FnePeer peer = (FnePeer)fne;
