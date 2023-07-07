@@ -45,6 +45,7 @@ namespace dvmbridge
 
         private byte[] netLDU1;
         private byte[] netLDU2;
+        private uint p25SeqNo = 0;
         private byte p25N = 0;
 
         /*
@@ -99,6 +100,24 @@ namespace dvmbridge
             data[22U] = duid;                                                               // DUID
 
             data[180U] = 0;                                                                 // Frame Type
+        }
+
+        /// <summary>
+        /// Helper to send a P25 TDU message.
+        /// </summary>
+        private void SendP25TDU()
+        {
+            FnePeer peer = (FnePeer)fne;
+            ushort pktSeq = peer.pktSeq(true);
+
+            byte[] payload = new byte[200];
+            CreateP25MessageHdr((byte)P25DUID.TDU, ref payload);
+            payload[23U] = P25_MSG_HDR_SIZE;
+
+            peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
+
+            p25SeqNo = 0;
+            p25N = 0;
         }
 
         /// <summary>
@@ -582,7 +601,11 @@ namespace dvmbridge
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             FnePeer peer = (FnePeer)fne;
-            ushort pktSeq = peer.pktSeq(true);
+            ushort pktSeq = 0;
+            if (p25SeqNo == 0U)
+                pktSeq = peer.pktSeq(true);
+            else
+                pktSeq = peer.pktSeq();
 
             // send P25 LDU1
             if (p25N == 8U)
@@ -593,7 +616,7 @@ namespace dvmbridge
                 CreateP25MessageHdr((byte)P25DUID.LDU1, ref payload);
                 CreateP25LDU1Message(ref payload);
 
-                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq);
+                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
             }
 
             // send P25 LDU2
@@ -605,9 +628,10 @@ namespace dvmbridge
                 CreateP25MessageHdr((byte)P25DUID.LDU2, ref payload);
                 CreateP25LDU2Message(ref payload);
 
-                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq);
+                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
             }
 
+            p25SeqNo++;
             p25N++;
         }
 

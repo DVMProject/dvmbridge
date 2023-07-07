@@ -104,9 +104,9 @@ namespace dvmbridge
         }
 
         /// <summary>
-        ///
+        /// Helper to send a DMR terminator with LC message.
         /// </summary>
-        private void CreateDMRTerminator()
+        private void SendDMRTerminator()
         {
             byte n = (byte)((dmrSeqNo - 3U) % 6U);
             uint fill = 6U - n;
@@ -131,7 +131,7 @@ namespace dvmbridge
                     emb.Encode(ref data);
 
                     CreateDMRMessage(ref data, FrameType.DATA_SYNC, (byte)dmrSeqNo, n);
-                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq);
+                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
 
                     dmrSeqNo++;
                     n++;
@@ -158,7 +158,7 @@ namespace dvmbridge
 
             CreateDMRMessage(ref data, FrameType.DATA_SYNC, (byte)dmrSeqNo, 0);
 
-            peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq);
+            peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
 
             ambeCount = 0;
             dmrSeqNo = 0;
@@ -178,11 +178,13 @@ namespace dvmbridge
             if (ambeCount == AMBE_PER_SLOT)
             {
                 FnePeer peer = (FnePeer)fne;
-                ushort pktSeq = peer.pktSeq(true);
+                ushort pktSeq = 0;
 
                 // is this the intitial sequence?
                 if (dmrSeqNo == 0)
                 {
+                    pktSeq = peer.pktSeq(true);
+
                     // send DMR voice header
                     data = new byte[33];
 
@@ -202,11 +204,13 @@ namespace dvmbridge
 
                     CreateDMRMessage(ref data, FrameType.VOICE_SYNC, (byte)dmrSeqNo, 0);
 
-                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq);
+                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
 
                     dmrSeqNo++;
                     Thread.Sleep(60);
                 }
+
+                pktSeq = peer.pktSeq();
 
                 // send DMR voice
                 data = new byte[33];
@@ -234,7 +238,7 @@ namespace dvmbridge
 
                 CreateDMRMessage(ref data, frameType, (byte)dmrSeqNo, dmrN);
 
-                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq);
+                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
 
                 dmrSeqNo++;
                 Thread.Sleep(60);

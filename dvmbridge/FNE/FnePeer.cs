@@ -221,15 +221,6 @@ namespace dvmbridge.FNE
         }
 
         /// <summary>
-        /// Helper to set the stream ID.
-        /// </summary>
-        /// <param name="streamId"></param>
-        public void SetStreamId(uint streamId)
-        {
-            this.streamId = streamId;
-        }
-
-        /// <summary>
         /// Helper to send a raw UDP frame.
         /// </summary>
         /// <param name="frame">UDP frame to send</param>
@@ -247,8 +238,12 @@ namespace dvmbridge.FNE
         /// <param name="opcode">Opcode</param>
         /// <param name="message">Byte array containing message to send</param>
         /// <param name="pktSeq">RTP Packet Sequence</param>
-        public void SendMaster(Tuple<byte, byte> opcode, byte[] message, ushort pktSeq)
+        /// <param name="streamId"></param>
+        public void SendMaster(Tuple<byte, byte> opcode, byte[] message, ushort pktSeq, uint streamId = 0)
         {
+            if (streamId == 0)
+                streamId = this.streamId;
+
             Send(new UdpFrame()
             {
                 Endpoint = masterEndpoint,
