@@ -38,6 +38,9 @@ namespace dvmbridge
     /// </summary>
     public abstract partial class FneSystemBase
     {
+        private const int DMR_AMBE_LENGTH_BYTES = 27;
+        private const int AMBE_PER_SLOT = 3;
+
         private MBEDecoderManaged dmrDecoder;
         private MBEEncoderManaged dmrEncoder;
 
@@ -63,6 +66,43 @@ namespace dvmbridge
         }
 
         /// <summary>
+        /// Helper to decode and playback DMR AMBE frames as PCM audio.
+        /// </summary>
+        /// <param name="ambe"></param>
+        /// <param name="e"></param>
+        private void DMRDecodeAudioFrame(byte[] ambe, DMRDataReceivedEvent e)
+        {
+            // Log.Logger.Debug($"FULL AMBE {FneUtils.HexDump(ambe)}");
+            for (int n = 0; n < 3; n++)
+            {
+                byte[] ambePartial = new byte[9];
+                for (int i = 0; i < 9; i++)
+                    ambePartial[i] = ambe[i + (n * 9)];
+
+                short[] samples = null;
+                int errs = dmrDecoder.decode(ambePartial, out samples);
+                if (samples != null)
+                {
+                    Log.Logger.Information($"({SystemName}) DMRD: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} TS {e.Slot + 1} VC{e.n}.{n} ERRS {errs} [STREAM ID {e.StreamId}]");
+                    // Log.Logger.Debug($"PARTIAL AMBE {FneUtils.HexDump(ambePartial)}");
+                    // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
+
+                    int pcmIdx = 0;
+                    byte[] pcm = new byte[samples.Length * 2];
+                    for (int smpIdx = 0; smpIdx < samples.Length; smpIdx++)
+                    {
+                        pcm[pcmIdx + 0] = (byte)(samples[smpIdx] & 0xFF);
+                        pcm[pcmIdx + 1] = (byte)((samples[smpIdx] >> 8) & 0xFF);
+                        pcmIdx += 2;
+                    }
+
+                    // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
+                    waveProvider.AddSamples(pcm, 0, pcm.Length);
+                }
+            }
+        }
+
+        /// <summary>
         /// Event handler used to process incoming DMR data.
         /// </summary>
         /// <param name="sender"></param>
@@ -82,6 +122,10 @@ namespace dvmbridge
                     Log.Logger.Warning($"({SystemName}) DMRD: Received call from SRC_ID {e.SrcId}? Dropping call data.");
                     return;
                 }
+
+                // ensure destination ID and slot matches
+                if (e.DstId != Program.Configuration.DestinationId && e.Slot != (byte)Program.Configuration.Slot)
+                    return;
 
                 // is this a new call stream?
                 if (e.StreamId != status[e.Slot].RxStreamId)
@@ -121,7 +165,15 @@ namespace dvmbridge
                     Log.Logger.Information($"({SystemName}) DMRD: Traffic *CALL END       * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} DUR {callDuration} [STREAM ID {e.StreamId}]");
                 }
 
-                /* TODO: handle vocoding */
+                if (e.FrameType == FrameType.VOICE_SYNC || e.FrameType == FrameType.VOICE)
+                {
+                    byte[] ambe = new byte[DMR_AMBE_LENGTH_BYTES];
+                    Buffer.BlockCopy(dmrpkt, 0, ambe, 0, 14);
+                    ambe[13] &= 0xF0;
+                    ambe[13] |= (byte)(dmrpkt[19] & 0x0F);
+                    Buffer.BlockCopy(dmrpkt, 20, ambe, 14, 13);
+                    DMRDecodeAudioFrame(ambe, e);
+                }
 
                 status[e.Slot].RxRFS = e.SrcId;
                 status[e.Slot].RxType = e.FrameType;

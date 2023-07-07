@@ -75,7 +75,7 @@ namespace dvmbridge
         }
 
         /// <summary>
-        /// 
+        /// Helper to decode and playback P25 IMBE frames as PCM audio.
         /// </summary>
         /// <param name="ldu"></param>
         /// <param name="e"></param>
@@ -121,8 +121,8 @@ namespace dvmbridge
                 if (samples != null)
                 {
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} VC{n} ERRS {errs} [STREAM ID {e.StreamId}]");
-                    Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
-                    Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
+                    // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
+                    // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
 
                     int pcmIdx = 0;
                     byte[] pcm = new byte[samples.Length * 2];
@@ -133,7 +133,7 @@ namespace dvmbridge
                         pcmIdx += 2;
                     }
 
-                    Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
+                    // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
                     waveProvider.AddSamples(pcm, 0, pcm.Length);
                 }
             }
@@ -163,6 +163,10 @@ namespace dvmbridge
                     Log.Logger.Warning($"({SystemName}) P25D: Received call from SRC_ID {e.SrcId}? Dropping call e.Data.");
                     return;
                 }
+
+                // ensure destination ID matches
+                if (e.DstId != Program.Configuration.DestinationId)
+                    return;
 
                 // is this a new call stream?
                 if (e.StreamId != status[P25_FIXED_SLOT].RxStreamId && ((e.DUID != P25DUID.TDU) && (e.DUID != P25DUID.TDULC)))

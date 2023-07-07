@@ -276,12 +276,12 @@ namespace dvmbridge
 
             // initialize DMR vocoders
             dmrDecoder = new MBEDecoderManaged(MBEMode.DMRAMBE);
-            dmrDecoder.GainAdjust = 3.0f;
+            dmrDecoder.GainAdjust = Program.Configuration.AudioGain;
             dmrEncoder = new MBEEncoderManaged(MBEMode.DMRAMBE);
 
             // initialize P25 vocoders
             p25Decoder = new MBEDecoderManaged(MBEMode.IMBE);
-            p25Decoder.GainAdjust = 3.0f;
+            p25Decoder.GainAdjust = Program.Configuration.AudioGain;
             p25Encoder = new MBEEncoderManaged(MBEMode.IMBE);
 
             netLDU1 = new byte[9 * 25];

@@ -69,6 +69,11 @@ namespace dvmbridge
         /// 
         /// </summary>
         public bool RawPacketTrace = false;
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        public float AudioGain = 3.0f;
 
         /// <summary>
         /// 
@@ -99,6 +104,11 @@ namespace dvmbridge
         /// 
         /// </summary>
         public int DestinationId;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int Slot;
 
         /// <summary>
         /// 
