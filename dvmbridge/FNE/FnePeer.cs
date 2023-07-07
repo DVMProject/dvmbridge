@@ -221,6 +221,15 @@ namespace dvmbridge.FNE
         }
 
         /// <summary>
+        /// Helper to set the stream ID.
+        /// </summary>
+        /// <param name="streamId"></param>
+        public void SetStreamId(uint streamId)
+        {
+            this.streamId = streamId;
+        }
+
+        /// <summary>
         /// Helper to send a raw UDP frame.
         /// </summary>
         /// <param name="frame">UDP frame to send</param>

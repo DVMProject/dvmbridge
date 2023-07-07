@@ -336,11 +336,22 @@ namespace dvmbridge
         /// <param name="e"></param>
         private void MeterProvider_StreamVolume(object sender, StreamVolumeEventArgs e)
         {
+            float sampleLevel = Program.Configuration.VoxSampleLevel / 1000;
+
+            FnePeer peer = (FnePeer)fne;
+            uint srcId = (uint)Program.Configuration.SourceId;
+            uint dstId = (uint)Program.Configuration.DestinationId;
+
             // handle Rx triggered by internal VOX
-            if (e.MaxSampleValues[0] > Program.Configuration.VOXSampleLevel)
+            if (e.MaxSampleValues[0] > sampleLevel)
             {
                 audioDetect = true;
-                txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
+                if (txStreamId == 0)
+                {
+                    Log.Logger.Information($"({SystemName}) Local Traffic *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
+                    txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
+                    peer.SetStreamId(txStreamId);
+                }
                 dropAudio.Reset();
             }
             else
@@ -349,11 +360,16 @@ namespace dvmbridge
                 int dropTimeMs = (Program.Configuration.TxMode == TX_MODE_P25) ? P25_AUDIO_DROP_MS : DMR_AUDIO_DROP_MS;
                 if (dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > dropTimeMs))
                 {
-                    audioDetect = false;
-                    dropAudio.Reset();
+                    if (audioDetect)
+                    {
+                        Log.Logger.Information($"({SystemName}) Local Traffic *CALL END       * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
-                    txStreamId = 0;
-                    p25N = 0;
+                        audioDetect = false;
+                        dropAudio.Reset();
+
+                        txStreamId = 0;
+                        p25N = 0;
+                    }
                 }
 
                 if (!dropAudio.IsRunning)
@@ -377,10 +393,7 @@ namespace dvmbridge
                 // trigger readback of metering buffer
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
                 this.meterProvider.Read(temp, 0, temp.Length);
-/*
-** bryanb: this is disabled .. for now; until transmit is stable
-*/
-#if false
+
                 if (audioDetect)
                 {
                     switch (Program.Configuration.TxMode)
@@ -393,7 +406,6 @@ namespace dvmbridge
                             break;
                     }
                 }
-#endif
             }
         }
 

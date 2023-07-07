@@ -305,9 +305,9 @@ namespace dvmbridge
                     }
                 }
             }
-            catch
+            catch (Exception e)
             {
-                Console.WriteLine($"error: cannot read the configuration file, {configFile}");
+                Console.WriteLine($"error: cannot read the configuration file, {configFile}\n{e.Message}");
                 Environment.Exit((int)ERRNO.ENOCONFIG);
             }
 

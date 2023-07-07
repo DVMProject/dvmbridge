@@ -83,7 +83,7 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public float VOXSampleLevel = 30.0f;
+        public float VoxSampleLevel = 30.0f;
 
         /// <summary>
         /// 
