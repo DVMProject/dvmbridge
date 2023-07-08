@@ -73,7 +73,12 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public float AudioGain = 3.0f;
+        public float RxAudioGain = 3.0f;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public float TxAudioGain = 3.0f;
 
         /// <summary>
         /// 

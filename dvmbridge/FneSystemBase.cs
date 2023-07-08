@@ -314,15 +314,15 @@ namespace dvmbridge
 
             // initialize DMR vocoders
             dmrDecoder = new MBEDecoderManaged(MBEMode.DMRAMBE);
-            dmrDecoder.GainAdjust = Program.Configuration.AudioGain;
+            dmrDecoder.GainAdjust = Program.Configuration.RxAudioGain;
             dmrEncoder = new MBEEncoderManaged(MBEMode.DMRAMBE);
-            dmrEncoder.GainAdjust = Program.Configuration.AudioGain;
+            dmrEncoder.GainAdjust = Program.Configuration.TxAudioGain;
 
             // initialize P25 vocoders
             p25Decoder = new MBEDecoderManaged(MBEMode.IMBE);
-            p25Decoder.GainAdjust = Program.Configuration.AudioGain;
+            p25Decoder.GainAdjust = Program.Configuration.RxAudioGain;
             p25Encoder = new MBEEncoderManaged(MBEMode.IMBE);
-            p25Encoder.GainAdjust = Program.Configuration.AudioGain;
+            p25Encoder.GainAdjust = Program.Configuration.TxAudioGain;
 
             embeddedData = new EmbeddedData();
             ambeBuffer = new byte[27];
