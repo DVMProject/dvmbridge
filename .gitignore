@@ -62,4 +62,4 @@ package/
 
 # Visual Studio
 .vs
-launchsettings.json
+launchSettings.json

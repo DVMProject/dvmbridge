@@ -2,7 +2,7 @@
   "profiles": {
     "dvmbridge": {
       "commandName": "Project",
-      "commandLineArgs": "-l -c test-config.yml -o0 -i0",
+      "commandLineArgs": "-l -c config.yml -o0 -i0",
       "nativeDebugging": true
     }
   }
