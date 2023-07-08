@@ -144,8 +144,6 @@ namespace dvmbridge
 
                     dmrSeqNo++;
                     n++;
-
-                    Thread.Sleep(60);
                 }
             }
 
@@ -257,7 +255,6 @@ namespace dvmbridge
                     peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), dmrpkt, pktSeq, txStreamId);
 
                     dmrSeqNo++;
-                    Thread.Sleep(60);
                 }
 
                 pktSeq = peer.pktSeq();
@@ -296,7 +293,6 @@ namespace dvmbridge
                 peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), dmrpkt, pktSeq, txStreamId);
 
                 dmrSeqNo++;
-                Thread.Sleep(60);
 
                 FneUtils.Memset(ambeBuffer, 0, 27);
                 ambeCount = 0;
