@@ -63,3 +63,4 @@ package/
 # Visual Studio
 .vs
 launchSettings.json
+/dvmbridge/Properties/launchSettings.json
