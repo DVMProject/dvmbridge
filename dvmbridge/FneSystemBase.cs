@@ -365,7 +365,7 @@ namespace dvmbridge
 
                         audioDetect = false;
                         dropAudio.Reset();
-
+#if !ENCODER_LOOPBACK_TEST
                         switch (Program.Configuration.TxMode)
                         {
                             case TX_MODE_DMR:
@@ -375,7 +375,7 @@ namespace dvmbridge
                                 SendP25TDU();
                                 break;
                         }
-
+#endif
                         txStreamId = 0;
                     }
                 }

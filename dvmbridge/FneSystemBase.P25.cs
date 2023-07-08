@@ -534,7 +534,27 @@ namespace dvmbridge
             byte[] imbe = null;
             p25Encoder.encode(samples, out imbe);
             // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
+#if ENCODER_LOOPBACK_TEST
+            short[] samp2 = null;
+            int errs = p25Decoder.decode(imbe, out samp2);
+            if (samples != null)
+            {
+                Log.Logger.Debug($"LOOPBACK_TEST IMBE {FneUtils.HexDump(imbe)}");
+                Log.Logger.Debug($"LOOPBACK_TEST SAMPLE BUFFER {FneUtils.HexDump(samp2)}");
 
+                int pcmIdx = 0;
+                byte[] pcm2 = new byte[samp2.Length * 2];
+                for (int smpIdx2 = 0; smpIdx2 < samp2.Length; smpIdx2++)
+                {
+                    pcm2[pcmIdx + 0] = (byte)(samp2[smpIdx2] & 0xFF);
+                    pcm2[pcmIdx + 1] = (byte)((samp2[smpIdx2] >> 8) & 0xFF);
+                    pcmIdx += 2;
+                }
+
+                Log.Logger.Debug($"LOOPBACK_TEST BYTE BUFFER {FneUtils.HexDump(pcm2)}");
+                waveProvider.AddSamples(pcm2, 0, pcm2.Length);
+            }
+#else
             // fill the LDU buffers appropriately
             switch (p25N)
             {
@@ -640,6 +660,7 @@ namespace dvmbridge
 
             p25SeqNo++;
             p25N++;
+#endif
         }
 
         /// <summary>

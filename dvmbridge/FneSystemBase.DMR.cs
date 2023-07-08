@@ -174,6 +174,41 @@ namespace dvmbridge
             uint srcId = (uint)Program.Configuration.SourceId;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
+            byte slot = (byte)Program.Configuration.Slot;
+#if ENCODER_LOOPBACK_TEST
+            if (ambeCount == AMBE_PER_SLOT)
+            {
+                for (int n = 0; n < AMBE_PER_SLOT; n++)
+                {
+                    byte[] ambePartial = new byte[9];
+                    for (int i = 0; i < 9; i++)
+                        ambePartial[i] = ambeBuffer[i + (n * 9)];
+
+                    short[] samp = null;
+                    int errs = dmrDecoder.decode(ambePartial, out samp);
+                    if (samp != null)
+                    {
+                        Log.Logger.Debug($"LOOPBACK_TEST PARTIAL AMBE {FneUtils.HexDump(ambePartial)}");
+                        Log.Logger.Debug($"LOOPBACK_TEST SAMPLE BUFFER {FneUtils.HexDump(samp)}");
+
+                        int pcmIdx = 0;
+                        byte[] pcm2 = new byte[samp.Length * 2];
+                        for (int smpIdx2 = 0; smpIdx2 < samp.Length; smpIdx2++)
+                        {
+                            pcm2[pcmIdx + 0] = (byte)(samp[smpIdx2] & 0xFF);
+                            pcm2[pcmIdx + 1] = (byte)((samp[smpIdx2] >> 8) & 0xFF);
+                            pcmIdx += 2;
+                        }
+
+                        Log.Logger.Debug($"LOOPBACK_TEST BYTE BUFFER {FneUtils.HexDump(pcm)}");
+                        waveProvider.AddSamples(pcm2, 0, pcm2.Length);
+                    }
+                }
+
+                FneUtils.Memset(ambeBuffer, 0, 27);
+                ambeCount = 0;
+            }
+#else
             byte[] data = null;
             dmrN = (byte)(dmrSeqNo % 6);
             if (ambeCount == AMBE_PER_SLOT)
@@ -237,6 +272,8 @@ namespace dvmbridge
                     emb.Encode(ref data);
                 }
 
+                Log.Logger.Information($"({SystemName}) DMRD: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} TS {slot} VC{dmrN} [STREAM ID {txStreamId}]");
+
                 CreateDMRMessage(ref data, frameType, (byte)dmrSeqNo, dmrN);
 
                 peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
@@ -247,7 +284,7 @@ namespace dvmbridge
                 FneUtils.Memset(ambeBuffer, 0, 27);
                 ambeCount = 0;
             }
-
+#endif
             // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
 
             int smpIdx = 0;
@@ -263,7 +300,7 @@ namespace dvmbridge
             // encode PCM samples into AMBE codewords
             byte[] ambe = null;
             dmrEncoder.encode(samples, out ambe);
-            // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
+            // Log.Logger.Debug($"AMBE {FneUtils.HexDump(ambe)}");
 
             Buffer.BlockCopy(ambe, 0, ambeBuffer, ambeCount * 9, 9);
             ambeCount++;
@@ -277,7 +314,7 @@ namespace dvmbridge
         private void DMRDecodeAudioFrame(byte[] ambe, DMRDataReceivedEvent e)
         {
             // Log.Logger.Debug($"FULL AMBE {FneUtils.HexDump(ambe)}");
-            for (int n = 0; n < 3; n++)
+            for (int n = 0; n < AMBE_PER_SLOT; n++)
             {
                 byte[] ambePartial = new byte[9];
                 for (int i = 0; i < 9; i++)
