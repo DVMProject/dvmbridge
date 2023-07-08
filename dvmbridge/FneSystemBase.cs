@@ -129,6 +129,8 @@ namespace dvmbridge
         public const int SAMPLE_RATE = 8000;
         public const int BITS_PER_SECOND = 16;
 
+        private const int MBE_SAMPLES_LENGTH = 160;
+
         private const int AUDIO_BUFFER_MS = 20;
         private const int AUDIO_NO_BUFFERS = 2;
         private const int DMR_AUDIO_DROP_MS = 60;

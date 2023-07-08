@@ -38,6 +38,10 @@ namespace dvmbridge
     /// </summary>
     public abstract partial class FneSystemBase
     {
+        private const int DMR_FRAME_LENGTH_BYTES = 33;
+        private const int DMR_PACKET_SIZE = 55;
+        private const int AMBE_BUF_LEN = 9;
+
         private const int DMR_AMBE_LENGTH_BYTES = 27;
         private const int AMBE_PER_SLOT = 3;
 
@@ -114,13 +118,14 @@ namespace dvmbridge
             FnePeer peer = (FnePeer)fne;
             ushort pktSeq = peer.pktSeq(true);
 
-            byte[] data = null;
-            if (n > 0U) {
-                for (uint i = 0U; i < fill; i++) {
-
+            byte[] data = null, dmrpkt = null;
+            if (n > 0U) 
+            {
+                for (uint i = 0U; i < fill; i++) 
+                {
                     // generate DMR AMBE data
-                    data = new byte[33];
-                    Buffer.BlockCopy(DMR_SILENCE_DATA, 0, data, 0, 33);
+                    data = new byte[DMR_FRAME_LENGTH_BYTES];
+                    Buffer.BlockCopy(DMR_SILENCE_DATA, 0, data, 0, DMR_FRAME_LENGTH_BYTES);
 
                     byte lcss = embeddedData.GetData(ref data, dmrN);
 
@@ -130,8 +135,12 @@ namespace dvmbridge
                     emb.LCSS = lcss;
                     emb.Encode(ref data);
 
-                    CreateDMRMessage(ref data, FrameType.DATA_SYNC, (byte)dmrSeqNo, n);
-                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
+                    // generate DMR network frame
+                    dmrpkt = new byte[DMR_PACKET_SIZE];
+                    CreateDMRMessage(ref dmrpkt, FrameType.DATA_SYNC, (byte)dmrSeqNo, n);
+                    Buffer.BlockCopy(data, 0, dmrpkt, 20, DMR_FRAME_LENGTH_BYTES);
+
+                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), dmrpkt, pktSeq, txStreamId);
 
                     dmrSeqNo++;
                     n++;
@@ -140,7 +149,7 @@ namespace dvmbridge
                 }
             }
 
-            data = new byte[33];
+            data = new byte[DMR_FRAME_LENGTH_BYTES];
 
             // generate DMR LC
             LC dmrLC = new LC();
@@ -155,10 +164,12 @@ namespace dvmbridge
 
             FullLC.Encode(dmrLC, ref data, DMRDataType.TERMINATOR_WITH_LC);
 
+            // generate DMR network frame
+            dmrpkt = new byte[DMR_PACKET_SIZE];
+            CreateDMRMessage(ref dmrpkt, FrameType.DATA_SYNC, (byte)dmrSeqNo, 0);
+            Buffer.BlockCopy(data, 0, dmrpkt, 20, DMR_FRAME_LENGTH_BYTES);
 
-            CreateDMRMessage(ref data, FrameType.DATA_SYNC, (byte)dmrSeqNo, 0);
-
-            peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
+            peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), dmrpkt, pktSeq, txStreamId);
 
             ambeCount = 0;
             dmrSeqNo = 0;
@@ -180,8 +191,8 @@ namespace dvmbridge
             {
                 for (int n = 0; n < AMBE_PER_SLOT; n++)
                 {
-                    byte[] ambePartial = new byte[9];
-                    for (int i = 0; i < 9; i++)
+                    byte[] ambePartial = new byte[AMBE_BUF_LEN];
+                    for (int i = 0; i < AMBE_BUF_LEN; i++)
                         ambePartial[i] = ambeBuffer[i + (n * 9)];
 
                     short[] samp = null;
@@ -209,7 +220,7 @@ namespace dvmbridge
                 ambeCount = 0;
             }
 #else
-            byte[] data = null;
+            byte[] data = null, dmrpkt = null;
             dmrN = (byte)(dmrSeqNo % 6);
             if (ambeCount == AMBE_PER_SLOT)
             {
@@ -222,7 +233,7 @@ namespace dvmbridge
                     pktSeq = peer.pktSeq(true);
 
                     // send DMR voice header
-                    data = new byte[33];
+                    data = new byte[DMR_FRAME_LENGTH_BYTES];
 
                     // generate DMR LC
                     LC dmrLC = new LC();
@@ -238,9 +249,12 @@ namespace dvmbridge
 
                     FullLC.Encode(dmrLC, ref data, DMRDataType.VOICE_LC_HEADER);
 
-                    CreateDMRMessage(ref data, FrameType.VOICE_SYNC, (byte)dmrSeqNo, 0);
+                    // generate DMR network frame
+                    dmrpkt = new byte[DMR_PACKET_SIZE];
+                    CreateDMRMessage(ref dmrpkt, FrameType.VOICE_SYNC, (byte)dmrSeqNo, 0);
+                    Buffer.BlockCopy(data, 0, dmrpkt, 20, DMR_FRAME_LENGTH_BYTES);
 
-                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
+                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), dmrpkt, pktSeq, txStreamId);
 
                     dmrSeqNo++;
                     Thread.Sleep(60);
@@ -249,7 +263,7 @@ namespace dvmbridge
                 pktSeq = peer.pktSeq();
 
                 // send DMR voice
-                data = new byte[33];
+                data = new byte[DMR_FRAME_LENGTH_BYTES];
 
                 Buffer.BlockCopy(ambeBuffer, 0, data, 0, 13);
                 data[13U] = (byte)(ambeBuffer[13U] & 0xF0);
@@ -274,9 +288,12 @@ namespace dvmbridge
 
                 Log.Logger.Information($"({SystemName}) DMRD: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} TS {slot} VC{dmrN} [STREAM ID {txStreamId}]");
 
-                CreateDMRMessage(ref data, frameType, (byte)dmrSeqNo, dmrN);
+                // generate DMR network frame
+                dmrpkt = new byte[DMR_PACKET_SIZE];
+                CreateDMRMessage(ref dmrpkt, frameType, (byte)dmrSeqNo, dmrN);
+                Buffer.BlockCopy(data, 0, dmrpkt, 20, DMR_FRAME_LENGTH_BYTES);
 
-                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), data, pktSeq, txStreamId);
+                peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), dmrpkt, pktSeq, txStreamId);
 
                 dmrSeqNo++;
                 Thread.Sleep(60);
@@ -288,7 +305,7 @@ namespace dvmbridge
             // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
 
             int smpIdx = 0;
-            short[] samples = new short[160];
+            short[] samples = new short[MBE_SAMPLES_LENGTH];
             for (int pcmIdx = 0; pcmIdx < pcm.Length; pcmIdx += 2)
             {
                 samples[smpIdx] = (short)((pcm[pcmIdx + 1] << 8) + pcm[pcmIdx + 0]);
@@ -302,7 +319,7 @@ namespace dvmbridge
             dmrEncoder.encode(samples, out ambe);
             // Log.Logger.Debug($"AMBE {FneUtils.HexDump(ambe)}");
 
-            Buffer.BlockCopy(ambe, 0, ambeBuffer, ambeCount * 9, 9);
+            Buffer.BlockCopy(ambe, 0, ambeBuffer, ambeCount * 9, AMBE_BUF_LEN);
             ambeCount++;
         }
 
@@ -316,8 +333,8 @@ namespace dvmbridge
             // Log.Logger.Debug($"FULL AMBE {FneUtils.HexDump(ambe)}");
             for (int n = 0; n < AMBE_PER_SLOT; n++)
             {
-                byte[] ambePartial = new byte[9];
-                for (int i = 0; i < 9; i++)
+                byte[] ambePartial = new byte[AMBE_BUF_LEN];
+                for (int i = 0; i < AMBE_BUF_LEN; i++)
                     ambePartial[i] = ambe[i + (n * 9)];
 
                 short[] samples = null;
@@ -352,8 +369,8 @@ namespace dvmbridge
         {
             DateTime pktTime = DateTime.Now;
             
-            byte[] data = new byte[33];
-            Buffer.BlockCopy(e.Data, 20, data, 0, 33);
+            byte[] data = new byte[DMR_FRAME_LENGTH_BYTES];
+            Buffer.BlockCopy(e.Data, 20, data, 0, DMR_FRAME_LENGTH_BYTES);
             byte bits = e.Data[15];
 
             if (e.CallType == CallType.GROUP)

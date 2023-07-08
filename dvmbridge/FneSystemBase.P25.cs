@@ -39,6 +39,7 @@ namespace dvmbridge
     public abstract partial class FneSystemBase
     {
         private const int P25_MSG_HDR_SIZE = 24;
+        private const int IMBE_BUF_LEN = 11;
 
         private MBEDecoderManaged p25Decoder;
         private MBEEncoderManaged p25Encoder;
@@ -181,7 +182,7 @@ namespace dvmbridge
             {
                 case P25DFSI.P25_DFSI_LDU1_VOICE2:
                     {
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 1, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 1, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[12U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
                     }
                     break;
@@ -190,7 +191,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = P25Defines.LC_GROUP;                                // LCO
                         dfsiFrame[2U] = 0;                                                  // MFId
                         dfsiFrame[3U] = 0;                                                  // Service Options
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -199,7 +200,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = (byte)((dstId >> 16) & 0xFFU);                      // Talkgroup Address
                         dfsiFrame[2U] = (byte)((dstId >> 8) & 0xFFU);
                         dfsiFrame[3U] = (byte)((dstId >> 0) & 0xFFU);
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -208,7 +209,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = (byte)((srcId >> 16) & 0xFFU);                      // Source Address
                         dfsiFrame[2U] = (byte)((srcId >> 8) & 0xFFU);
                         dfsiFrame[3U] = (byte)((srcId >> 0) & 0xFFU);
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -217,7 +218,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -226,7 +227,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -235,7 +236,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -243,7 +244,7 @@ namespace dvmbridge
                     {
                         dfsiFrame[1U] = 0;                                                  // LSD MSB
                         dfsiFrame[2U] = 0;                                                  // LSD LSB
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 4, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 4, IMBE_BUF_LEN);              // IMBE
                     }
                     break;
 
@@ -256,7 +257,7 @@ namespace dvmbridge
                         dfsiFrame[4U] = P25DFSI.P25_DFSI_TYPE_VOICE;                        // Type Flag
                         dfsiFrame[5U] = P25DFSI.P25_DFSI_DEF_ICW_SOURCE;                    // ICW Flag
                         dfsiFrame[6U] = 0;                                                  // RSSI
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 10, 11);                       // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 10, IMBE_BUF_LEN);             // IMBE
                         dfsiFrame[21U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
                     }
                     break;
@@ -273,41 +274,41 @@ namespace dvmbridge
         {
             // pack DFSI data
             int count = P25_MSG_HDR_SIZE;
-            byte[] imbe = new byte[11];
+            byte[] imbe = new byte[IMBE_BUF_LEN];
 
-            Buffer.BlockCopy(netLDU1, 10, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 10, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 24, imbe, P25DFSI.P25_DFSI_LDU1_VOICE1);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE1_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU1, 26, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 26, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 46, imbe, P25DFSI.P25_DFSI_LDU1_VOICE2);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE2_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU1, 55, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 55, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 60, imbe, P25DFSI.P25_DFSI_LDU1_VOICE3);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE3_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU1, 80, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 80, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 77, imbe, P25DFSI.P25_DFSI_LDU1_VOICE4);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE4_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU1, 105, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 105, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 94, imbe, P25DFSI.P25_DFSI_LDU1_VOICE5);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE5_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU1, 130, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 130, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 111, imbe, P25DFSI.P25_DFSI_LDU1_VOICE6);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE6_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU1, 155, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 155, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 128, imbe, P25DFSI.P25_DFSI_LDU1_VOICE7);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE7_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU1, 180, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 180, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 145, imbe, P25DFSI.P25_DFSI_LDU1_VOICE8);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE8_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU1, 204, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU1, 204, imbe, 0, IMBE_BUF_LEN);
             encodeLDU1(ref data, 162, imbe, P25DFSI.P25_DFSI_LDU1_VOICE9);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE9_FRAME_LENGTH_BYTES;
 
@@ -372,7 +373,7 @@ namespace dvmbridge
             {
                 case P25DFSI.P25_DFSI_LDU2_VOICE11:
                     {
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 1, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 1, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[12U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -381,7 +382,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = 0;                                                  // Message Indicator
                         dfsiFrame[2U] = 0;
                         dfsiFrame[3U] = 0;
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -390,7 +391,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = 0;                                                  // Message Indicator
                         dfsiFrame[2U] = 0;
                         dfsiFrame[3U] = 0;
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -399,7 +400,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = 0;                                                  // Message Indicator
                         dfsiFrame[2U] = 0;
                         dfsiFrame[3U] = 0;
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -408,7 +409,7 @@ namespace dvmbridge
                         dfsiFrame[1U] = 0x80;                                               // Algorithm ID
                         dfsiFrame[2U] = 0;                                                  // Key ID
                         dfsiFrame[3U] = 0;
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -417,7 +418,7 @@ namespace dvmbridge
                         // first 3 bytes of frame are supposed to be
                         // part of the RS(24, 16, 9) of the VOICE12, 13, 14, 15
                         // control bytes
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -426,7 +427,7 @@ namespace dvmbridge
                         // first 3 bytes of frame are supposed to be
                         // part of the RS(24, 16, 9) of the VOICE12, 13, 14, 15
                         // control bytes
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
                         dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
@@ -434,7 +435,7 @@ namespace dvmbridge
                     {
                         dfsiFrame[1U] = 0;                                                  // LSD MSB
                         dfsiFrame[2U] = 0;                                                  // LSD LSB
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 4, 11);                        // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 4, IMBE_BUF_LEN);              // IMBE
                     }
                     break;
 
@@ -447,7 +448,7 @@ namespace dvmbridge
                         dfsiFrame[4U] = P25DFSI.P25_DFSI_TYPE_VOICE;                        // Type Flag
                         dfsiFrame[5U] = P25DFSI.P25_DFSI_DEF_ICW_SOURCE;                    // ICW Flag
                         dfsiFrame[6U] = 0;                                                  // RSSI
-                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 10, 11);                       // IMBE
+                        Buffer.BlockCopy(imbe, 0, dfsiFrame, 10, IMBE_BUF_LEN);             // IMBE
                         dfsiFrame[21U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
                     }
                     break;
@@ -464,41 +465,41 @@ namespace dvmbridge
         {
             // pack DFSI data
             int count = P25_MSG_HDR_SIZE;
-            byte[] imbe = new byte[11];
+            byte[] imbe = new byte[IMBE_BUF_LEN];
 
-            Buffer.BlockCopy(netLDU2, 10, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 10, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 24, imbe, P25DFSI.P25_DFSI_LDU2_VOICE10);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE10_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU2, 26, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 26, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 46, imbe, P25DFSI.P25_DFSI_LDU2_VOICE11);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE11_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU2, 55, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 55, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 60, imbe, P25DFSI.P25_DFSI_LDU2_VOICE12);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE12_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU2, 80, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 80, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 77, imbe, P25DFSI.P25_DFSI_LDU2_VOICE13);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE13_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU2, 105, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 105, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 94, imbe, P25DFSI.P25_DFSI_LDU2_VOICE14);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE14_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU2, 130, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 130, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 111, imbe, P25DFSI.P25_DFSI_LDU2_VOICE15);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE15_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU2, 155, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 155, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 128, imbe, P25DFSI.P25_DFSI_LDU2_VOICE16);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE16_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU2, 180, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 180, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 145, imbe, P25DFSI.P25_DFSI_LDU2_VOICE17);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE17_FRAME_LENGTH_BYTES;
 
-            Buffer.BlockCopy(netLDU2, 204, imbe, 0, 11);
+            Buffer.BlockCopy(netLDU2, 204, imbe, 0, IMBE_BUF_LEN);
             encodeLDU2(ref data, 162, imbe, P25DFSI.P25_DFSI_LDU2_VOICE18);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE18_FRAME_LENGTH_BYTES;
 
@@ -521,7 +522,7 @@ namespace dvmbridge
             // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
 
             int smpIdx = 0;
-            short[] samples = new short[160];
+            short[] samples = new short[MBE_SAMPLES_LENGTH];
             for (int pcmIdx = 0; pcmIdx < pcm.Length; pcmIdx += 2)
             {
                 samples[smpIdx] = (short)((pcm[pcmIdx + 1] << 8) + pcm[pcmIdx + 0]);
@@ -560,60 +561,60 @@ namespace dvmbridge
             {
                 // LDU1
                 case 0:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 10, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 10, IMBE_BUF_LEN);
                     break;
                 case 1:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 26, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 26, IMBE_BUF_LEN);
                     break;
                 case 2:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 55, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 55, IMBE_BUF_LEN);
                     break;
                 case 3:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 80, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 80, IMBE_BUF_LEN);
                     break;
                 case 4:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 105, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 105, IMBE_BUF_LEN);
                     break;
                 case 5:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 130, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 130, IMBE_BUF_LEN);
                     break;
                 case 6:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 155, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 155, IMBE_BUF_LEN);
                     break;
                 case 7:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 180, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 180, IMBE_BUF_LEN);
                     break;
                 case 8:
-                    Buffer.BlockCopy(imbe, 0, netLDU1, 204, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU1, 204, IMBE_BUF_LEN);
                     break;
 
                 // LDU2
                 case 9:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 10, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 10, IMBE_BUF_LEN);
                     break;
                 case 10:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 26, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 26, IMBE_BUF_LEN);
                     break;
                 case 11:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 55, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 55, IMBE_BUF_LEN);
                     break;
                 case 12:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 80, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 80, IMBE_BUF_LEN);
                     break;
                 case 13:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 105, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 105, IMBE_BUF_LEN);
                     break;
                 case 14:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 130, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 130, IMBE_BUF_LEN);
                     break;
                 case 15:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 155, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 155, IMBE_BUF_LEN);
                     break;
                 case 16:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 180, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 180, IMBE_BUF_LEN);
                     break;
                 case 17:
-                    Buffer.BlockCopy(imbe, 0, netLDU2, 204, 11);
+                    Buffer.BlockCopy(imbe, 0, netLDU2, 204, IMBE_BUF_LEN);
                     break;
             }
 
@@ -673,35 +674,35 @@ namespace dvmbridge
             // decode 9 IMBE codewords into PCM samples
             for (int n = 0; n < 9; n++)
             {
-                byte[] imbe = new byte[11];
+                byte[] imbe = new byte[IMBE_BUF_LEN];
                 switch (n)
                 {
                     case 0:
-                        Buffer.BlockCopy(ldu, 10, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 10, imbe, 0, IMBE_BUF_LEN);
                         break;
                     case 1:
-                        Buffer.BlockCopy(ldu, 26, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 26, imbe, 0, IMBE_BUF_LEN);
                         break;
                     case 2:
-                        Buffer.BlockCopy(ldu, 55, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 55, imbe, 0, IMBE_BUF_LEN);
                         break;
                     case 3:
-                        Buffer.BlockCopy(ldu, 80, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 80, imbe, 0, IMBE_BUF_LEN);
                         break;
                     case 4:
-                        Buffer.BlockCopy(ldu, 105, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 105, imbe, 0, IMBE_BUF_LEN);
                         break;
                     case 5:
-                        Buffer.BlockCopy(ldu, 130, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 130, imbe, 0, IMBE_BUF_LEN);
                         break;
                     case 6:
-                        Buffer.BlockCopy(ldu, 155, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 155, imbe, 0, IMBE_BUF_LEN);
                         break;
                     case 7:
-                        Buffer.BlockCopy(ldu, 180, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 180, imbe, 0, IMBE_BUF_LEN);
                         break;
                     case 8:
-                        Buffer.BlockCopy(ldu, 204, imbe, 0, 11);
+                        Buffer.BlockCopy(ldu, 204, imbe, 0, IMBE_BUF_LEN);
                         break;
                 }
 
