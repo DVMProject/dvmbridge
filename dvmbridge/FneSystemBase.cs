@@ -133,8 +133,6 @@ namespace dvmbridge
 
         private const int AUDIO_BUFFER_MS = 20;
         private const int AUDIO_NO_BUFFERS = 2;
-        private const int DMR_AUDIO_DROP_MS = 60;
-        private const int P25_AUDIO_DROP_MS = 180;
 
         private const int TX_MODE_DMR = 1;
         private const int TX_MODE_P25 = 2;
@@ -358,8 +356,7 @@ namespace dvmbridge
             else
             {
                 // if we've exceeded the audio drop timeout, then really drop the audio
-                int dropTimeMs = (Program.Configuration.TxMode == TX_MODE_P25) ? P25_AUDIO_DROP_MS : DMR_AUDIO_DROP_MS;
-                if (dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > dropTimeMs))
+                if (dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > Program.Configuration.DropTimeMs))
                 {
                     if (audioDetect)
                     {

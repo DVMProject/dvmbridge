@@ -89,6 +89,10 @@ namespace dvmbridge
         /// 
         /// </summary>
         public float VoxSampleLevel = 30.0f;
+        /// <summary>
+        /// 
+        /// </summary>
+        public int DropTimeMs = 180;
 
         /// <summary>
         /// 

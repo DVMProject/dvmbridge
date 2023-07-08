@@ -15,8 +15,10 @@ txAudioGain: 3.0
 # Audio transmit mode (1 - DMR, 2 - P25).
 txMode: 1
 
-#
+# Relative sample level for VOX to activate.
 voxSampleLevel: 30.0
+# Amount of time (ms) from loss of active VOX level to drop audio.
+dropTimeMs: 180
 
 #
 # Logging Configuration
