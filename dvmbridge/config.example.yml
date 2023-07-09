@@ -6,12 +6,13 @@
 
 # Time in seconds between pings to peers.
 pingTime: 5
+
 # Flag indicating whether or not the router should debug display all packets received.
 rawPacketTrace: false
 # Audio gain for received audio frames.
 audioGain: 3.0
 # Audio transmit mode (1 - DMR, 2 - P25).
-txMode: 1
+txMode: 2
 
 #
 voxSampleLevel: 30.0
@@ -41,11 +42,11 @@ name: BRIDGE
 # Network Peer ID
 peerId: 9000123
 # Hostname/IP address of FNE master to connect to.
-address: 127.0.0.1
+address: 192.168.1.128
 # Port number to connect to.
 port: 62031
 # FNE access password.
-passphrase: RPT1234
+passphrase: Centrunk!
 
 #
 rxFrequency: 0
@@ -59,8 +60,21 @@ longitude: 0.0
 location: Anywhere, USA
 
 # Source "Radio ID" for transmitted audio frames
-sourceId: 1234567
+sourceId: 4000
 # Talkgroup ID for transmitted/received audio frames
-destinationId: 1
+destinationId: 31611
 # Slot for received/transmitted audio frames
 slot: 1
+
+
+# Enable local audio over speakers
+localAudio: false
+# Enable PCM audio over UDP
+udpAudio: true
+# PCM over UDP send port
+udpSendPort: 34001
+# PCM over UDP send address destination
+udpSendAddress: "127.0.0.1"
+
+#udpRecievePort: 32001
+#udpRecieveAddress: 127.0.0.1

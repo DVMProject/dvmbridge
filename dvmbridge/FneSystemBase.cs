@@ -33,6 +33,8 @@ using vocoder;
 
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using System.Net.Sockets;
+using System.Net;
 
 namespace dvmbridge
 {
@@ -161,6 +163,12 @@ namespace dvmbridge
         private Random rand;
         private uint txStreamId;
 
+        private UdpClient udpClient;  // UDP client for receiving audio data
+        private IPEndPoint udpEndpoint;  // UDP endpoint to listen for audio data
+
+        // Buffer for storing received audio data
+        private byte[] udpBuffer;
+
         /*
         ** Properties
         */
@@ -231,6 +239,7 @@ namespace dvmbridge
 
             this.rand = new Random(Guid.NewGuid().GetHashCode());
 
+
             // initialize slot statuses
             this.status = new SlotStatus[3];
             this.status[0] = new SlotStatus();  // DMR Slot 1
@@ -289,6 +298,17 @@ namespace dvmbridge
             this.waveOut.Init(waveProvider);
             this.waveOut.Play();
 
+            this.udpClient = new UdpClient();
+            this.udpEndpoint = new IPEndPoint(IPAddress.Any, 12345);  // Specify the UDP port to listen on
+            this.udpClient.Client.Bind(udpEndpoint);
+
+            // Set the receive buffer size for the UDP client
+            int receiveBufferSize = 65536;  // Adjust the buffer size as per your requirements
+            this.udpClient.Client.ReceiveBufferSize = receiveBufferSize;
+
+            // Initialize the buffer for storing received audio data
+            this.udpBuffer = new byte[receiveBufferSize];
+
             // initialize the primary input audio provider
             if (Program.WaveInDevice != -1)
             {
@@ -307,10 +327,11 @@ namespace dvmbridge
                     this.waveIn.NumberOfBuffers = AUDIO_NO_BUFFERS;
 
                     this.waveIn.DataAvailable += WaveIn_DataAvailable;
-
-                    this.waveIn.StartRecording();
+                    Task.Run(ReceiveUdpAudioData);
+                    //  this.waveIn.StartRecording();
                 });
             }
+
 
             // initialize DMR vocoders
             dmrDecoder = new MBEDecoderManaged(MBEMode.DMRAMBE);
@@ -330,7 +351,22 @@ namespace dvmbridge
             netLDU1 = new byte[9 * 25];
             netLDU2 = new byte[9 * 25];
         }
+        private async Task ReceiveUdpAudioData()
+        {
+            while (true)
+            {
+                // Receive UDP audio data
+                UdpReceiveResult result = await udpClient.ReceiveAsync();
 
+                // Process the received audio data
+                ProcessUdpAudioData(result.Buffer, result.Buffer.Length);
+            }
+        }
+        private void ProcessUdpAudioData(byte[] data, int length)
+        {
+            // Add the received audio data to the audio buffer
+            waveProvider.AddSamples(data, 0, length);
+        }
         /// <summary>
         /// Event that occurs when wave audio is detected.
         /// </summary>
@@ -403,8 +439,8 @@ namespace dvmbridge
                 // trigger readback of metering buffer
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
                 this.meterProvider.Read(temp, 0, temp.Length);
-
-                if (audioDetect)
+                bool enable_wav = true;
+                if (audioDetect && enable_wav)
                 {
                     switch (Program.Configuration.TxMode)
                     {
@@ -433,6 +469,8 @@ namespace dvmbridge
         /// </summary>
         public void Stop()
         {
+            udpClient.Close();
+
             ShutdownAudio();
             if (fne.IsStarted)
                 fne.Stop();

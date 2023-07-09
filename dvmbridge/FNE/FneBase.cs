@@ -413,6 +413,7 @@ namespace dvmbridge.FNE
         {
             /* stub */
         }
+
     } // public class PeerDetails
 
     /// <summary>
