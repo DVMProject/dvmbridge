@@ -117,6 +117,7 @@ namespace dvmbridge
             byte[] payload = new byte[200];
             CreateP25MessageHdr((byte)P25DUID.TDU, ref payload);
             payload[23U] = P25_MSG_HDR_SIZE;
+            //NET_FUNC_GRANT
 
             peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
 
@@ -675,7 +676,6 @@ namespace dvmbridge
         private void P25DecodeAudioFrame(byte[] ldu, P25DataReceivedEvent e)
         {
             UdpClient udpClient = new UdpClient();
-
             try
             {
                 // 
@@ -713,7 +713,6 @@ namespace dvmbridge
                             Buffer.BlockCopy(ldu, 204, imbe, 0, IMBE_BUF_LEN);
                             break;
                     }
-                    //    Console.WriteLine(Program.Configuration.UdpSendPort);
                     short[] samples = null;
                     int errs = p25Decoder.decode(imbe, out samples);
                     if (samples != null)
@@ -738,7 +737,6 @@ namespace dvmbridge
                         {
                             waveProvider.AddSamples(pcm, 0, pcm.Length);
                         }
-                        Console.WriteLine(e.SrcId);
 
                         if (Program.Configuration.UdpAudio)
                         {
@@ -750,6 +748,7 @@ namespace dvmbridge
                             audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
 
                             IPAddress destinationIP = IPAddress.Parse(Program.Configuration.UdpSendAddress);
+                            Console.WriteLine(Program.Configuration.UdpSendAddress);
                             udpClient.Send(audioData, audioData.Length, new IPEndPoint(destinationIP, Program.Configuration.UdpSendPort));
                         }
                     }
@@ -794,6 +793,7 @@ namespace dvmbridge
                 // ensure destination ID matches
                 if (e.DstId != Program.Configuration.DestinationId)
                     return;
+                   // Console.WriteLine("DST ID IGNORED");
 
                 // is this a new call stream?
                 if (e.StreamId != status[P25_FIXED_SLOT].RxStreamId && ((e.DUID != P25DUID.TDU) && (e.DUID != P25DUID.TDULC)))
