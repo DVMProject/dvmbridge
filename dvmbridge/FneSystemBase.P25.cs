@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Net.Sockets;
+using System.Net;
 
 using Serilog;
 
@@ -31,7 +32,6 @@ using dvmbridge.FNE;
 using dvmbridge.FNE.P25;
 
 using vocoder;
-using System.Net;
 
 namespace dvmbridge
 {
@@ -40,7 +40,6 @@ namespace dvmbridge
     /// </summary>
     public abstract partial class FneSystemBase
     {
-
         private const int P25_MSG_HDR_SIZE = 24;
         private const int IMBE_BUF_LEN = 11;
 
@@ -71,7 +70,6 @@ namespace dvmbridge
         {
             return true;
         }
-
         /// <summary>
         /// Event handler used to pre-process incoming P25 data.
         /// </summary>
@@ -81,7 +79,6 @@ namespace dvmbridge
         {
             return;
         }
-
         /// <summary>
         /// Creates an P25 frame message header.
         /// </summary>
@@ -755,7 +752,6 @@ namespace dvmbridge
                             audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
 
                             IPAddress destinationIP = IPAddress.Parse(Program.Configuration.UdpSendAddress);
-                            Console.WriteLine(Program.Configuration.UdpSendAddress);
                             udpClient.Send(audioData, audioData.Length, new IPEndPoint(destinationIP, Program.Configuration.UdpSendPort));
                         }
                     }
@@ -763,7 +759,7 @@ namespace dvmbridge
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception: " + ex.Message);
+                Log.Logger.Error($"Exception: {ex.Message}");
             }
             finally
             {
@@ -800,7 +796,6 @@ namespace dvmbridge
                 // ensure destination ID matches
                 if (e.DstId != Program.Configuration.DestinationId)
                     return;
-                   // Console.WriteLine("DST ID IGNORED");
 
                 // is this a new call stream?
                 if (e.StreamId != status[P25_FIXED_SLOT].RxStreamId && ((e.DUID != P25DUID.TDU) && (e.DUID != P25DUID.TDULC)))

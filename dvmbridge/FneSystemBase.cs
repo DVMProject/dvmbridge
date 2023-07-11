@@ -23,6 +23,8 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Net;
 
 using Serilog;
 
@@ -34,8 +36,6 @@ using vocoder;
 
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
-using System.Net.Sockets;
-using System.Net;
 
 namespace dvmbridge
 {
@@ -451,7 +451,7 @@ namespace dvmbridge
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
                 this.meterProvider.Read(temp, 0, temp.Length);
 
-                if (audioDetect)
+                if (audioDetect && !callInProgress)
                 {
                     switch (Program.Configuration.TxMode)
                     {
