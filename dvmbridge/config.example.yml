@@ -75,3 +75,12 @@ sourceId: 1234567
 destinationId: 1
 # Slot for received/transmitted audio frames
 slot: 1
+
+# Enable local audio over speakers
+localAudio: false
+# Enable PCM audio over UDP
+udpAudio: true
+# PCM over UDP send port
+udpSendPort: 34001
+# PCM over UDP send address destination
+udpSendAddress: "127.0.0.1"
