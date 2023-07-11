@@ -768,12 +768,14 @@ namespace dvmbridge
                 // is this a new call stream?
                 if (e.StreamId != status[P25_FIXED_SLOT].RxStreamId && ((e.DUID != P25DUID.TDU) && (e.DUID != P25DUID.TDULC)))
                 {
+                    callInProgress = true;
                     status[P25_FIXED_SLOT].RxStart = pktTime;
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *CALL START     * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} [STREAM ID {e.StreamId}]");
                 }
 
                 if (((e.DUID == P25DUID.TDU) || (e.DUID == P25DUID.TDULC)) && (status[P25_FIXED_SLOT].RxType != FrameType.TERMINATOR))
                 {
+                    callInProgress = false;
                     TimeSpan callDuration = pktTime - status[P25_FIXED_SLOT].RxStart;
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *CALL END       * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} DUR {callDuration} [STREAM ID {e.StreamId}]");
                 }

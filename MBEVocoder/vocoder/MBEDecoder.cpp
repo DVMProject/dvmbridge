@@ -93,6 +93,10 @@ MBEDecoder::MBEDecoder(MBE_DECODER_MODE mode) :
 {
     m_mbelibParms = new mbelibParms();
     mbe_initMbeParms(m_mbelibParms->m_cur_mp, m_mbelibParms->m_prev_mp, m_mbelibParms->m_prev_mp_enhanced);
+
+    ::memset(gainMaxBuf, 0, sizeof(float) * 200);
+    gainMaxBufPtr = gainMaxBuf;
+    gainMaxIdx = 0;
 }
 
 /// <summary>
@@ -182,11 +186,80 @@ int32_t MBEDecoder::decode(uint8_t* codeword, int16_t samples[])
     ::memset(samplesF, 0x00U, 160U);
     int32_t errs = decodeF(codeword, samplesF);
 
-    int16_t* samplePtr = samples;
     float* sampleFPtr = samplesF;
+    if (m_autoGain) {
+        // detect max level
+        float max = 0.0f;
+        for (int n = 0; n < 160; n++) {
+            float out = fabsf(*sampleFPtr);
+            if (out > max) {
+                max = out;
+            }
+
+            sampleFPtr++;
+        }
+
+        *gainMaxBufPtr = max;
+        gainMaxBufPtr++;
+        gainMaxIdx++;
+
+        if (gainMaxIdx > 24) {
+            gainMaxIdx = 0;
+            gainMaxBufPtr = gainMaxBuf;
+        }
+
+        // lookup max history
+        for (int i = 0; i < 25; i++) {
+            float a = gainMaxBuf[i];
+            if (a > max) {
+                max = a;
+            }
+        }
+
+        // determine optimal gain level
+        float gainFactor = 0.0f, gainDelta = 0.0f;
+        if (max > static_cast<float>(0)) {
+            gainFactor = (static_cast<float>(30000) / max);
+        }
+        else {
+            gainFactor = static_cast<float>(50);
+        }
+
+        if (gainFactor < m_gainAdjust) {
+            m_gainAdjust = gainFactor;
+            gainDelta = static_cast<float>(0);
+        }
+        else {
+            if (gainFactor > static_cast<float>(50)) {
+                gainFactor = static_cast<float>(50);
+            }
+
+            gainDelta = gainFactor - m_gainAdjust;
+
+            if (gainDelta > (static_cast<float>(0.05) * m_gainAdjust)) {
+                gainDelta = (static_cast<float>(0.05) * m_gainAdjust);
+            }
+        }
+
+        gainDelta /= static_cast<float>(160);
+
+        // adjust output gain
+        sampleFPtr = samplesF;
+        for (int n = 0; n < 160; n++) {
+            *sampleFPtr = (m_gainAdjust + (static_cast<float>(n) * gainDelta)) * (*sampleFPtr);
+            sampleFPtr++;
+        }
+
+        m_gainAdjust += (static_cast<float>(160) * gainDelta);
+    }
+
+    int16_t* samplePtr = samples;
+    sampleFPtr = samplesF;
     for (int n = 0; n < 160; n++) {
         float smp = *sampleFPtr;
-        smp *= m_gainAdjust;
+        if (!m_autoGain) {
+            smp *= m_gainAdjust;
+        }
 
         // audio clipping
         if (smp > 32760) {

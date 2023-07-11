@@ -8,9 +8,11 @@
 pingTime: 5
 # Flag indicating whether or not the router should debug display all packets received.
 rawPacketTrace: false
-# Audio gain for received audio frames.
+# Audio gain for received (from digital network) audio frames.
 rxAudioGain: 3.0
-# Audio gain for transmitted audio frames.
+# Flag indicating AGC should be used for frames received.
+rxAutoGain: false
+# Audio gain for transmitted (to digital network) audio frames.
 txAudioGain: 3.0
 # Audio transmit mode (1 - DMR, 2 - P25).
 txMode: 1

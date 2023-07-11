@@ -104,9 +104,15 @@ namespace vocoder
         static const int rY[36];
         static const int rZ[36];
 
+        float gainMaxBuf[200];
+        float* gainMaxBufPtr;
+        int gainMaxIdx;
+
     public:
         /// <summary></summary>
         __PROPERTY(float, gainAdjust, GainAdjust);
+        /// <summary></summary>
+        __PROPERTY(bool, autoGain, AutoGain);
     };
 } // namespace vocoder
 

@@ -142,6 +142,8 @@ namespace dvmbridge
 
         protected FneBase fne;
 
+        private bool callInProgress = false;
+
         private SlotStatus[] status;
 
         private WaveFormat waveFormat;                  //
@@ -329,12 +331,14 @@ namespace dvmbridge
             // initialize DMR vocoders
             dmrDecoder = new MBEDecoderManaged(MBEMode.DMRAMBE);
             dmrDecoder.GainAdjust = Program.Configuration.RxAudioGain;
+            dmrDecoder.AutoGain = Program.Configuration.RxAutoGain;
             dmrEncoder = new MBEEncoderManaged(MBEMode.DMRAMBE);
             dmrEncoder.GainAdjust = Program.Configuration.TxAudioGain;
 
             // initialize P25 vocoders
             p25Decoder = new MBEDecoderManaged(MBEMode.IMBE);
             p25Decoder.GainAdjust = Program.Configuration.RxAudioGain;
+            p25Decoder.AutoGain = Program.Configuration.RxAutoGain;
             p25Encoder = new MBEEncoderManaged(MBEMode.IMBE);
             p25Encoder.GainAdjust = Program.Configuration.TxAudioGain;
 
@@ -405,14 +409,17 @@ namespace dvmbridge
                         audioDetect = false;
                         dropAudio.Reset();
 #if !ENCODER_LOOPBACK_TEST
-                        switch (Program.Configuration.TxMode)
+                        if (!callInProgress)
                         {
-                            case TX_MODE_DMR:
-                                SendDMRTerminator();
-                                break;
-                            case TX_MODE_P25:
-                                SendP25TDU();
-                                break;
+                            switch (Program.Configuration.TxMode)
+                            {
+                                case TX_MODE_DMR:
+                                    SendDMRTerminator();
+                                    break;
+                                case TX_MODE_P25:
+                                    SendP25TDU();
+                                    break;
+                            }
                         }
 #endif
                         srcIdOverride = 0;
@@ -442,7 +449,7 @@ namespace dvmbridge
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
                 this.meterProvider.Read(temp, 0, temp.Length);
 
-                if (audioDetect)
+                if (audioDetect && !callInProgress)
                 {
                     switch (Program.Configuration.TxMode)
                     {

@@ -391,6 +391,7 @@ namespace dvmbridge
                 // is this a new call stream?
                 if (e.StreamId != status[e.Slot].RxStreamId)
                 {
+                    callInProgress = true;
                     status[e.Slot].RxStart = pktTime;
                     Log.Logger.Information($"({SystemName}) DMRD: Traffic *CALL START     * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} [STREAM ID {e.StreamId}]");
 
@@ -422,6 +423,7 @@ namespace dvmbridge
 
                 if ((e.FrameType == FrameType.DATA_SYNC) && (e.DataType == DMRDataType.TERMINATOR_WITH_LC) && (status[e.Slot].RxType != FrameType.TERMINATOR))
                 {
+                    callInProgress = false;
                     TimeSpan callDuration = pktTime - status[0].RxStart;
                     Log.Logger.Information($"({SystemName}) DMRD: Traffic *CALL END       * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} DUR {callDuration} [STREAM ID {e.StreamId}]");
                 }

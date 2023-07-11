@@ -78,6 +78,11 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
+        public bool RxAutoGain = false;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public float TxAudioGain = 3.0f;
 
         /// <summary>
