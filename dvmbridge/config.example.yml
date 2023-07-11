@@ -9,13 +9,23 @@ pingTime: 5
 
 # Flag indicating whether or not the router should debug display all packets received.
 rawPacketTrace: false
-# Audio gain for received audio frames.
-audioGain: 3.0
+# Audio gain for received (from digital network) audio frames.
+rxAudioGain: 3.0
+# Flag indicating AGC should be used for frames received.
+rxAutoGain: false
+# Audio gain for transmitted (to digital network) audio frames.
+txAudioGain: 3.0
 # Audio transmit mode (1 - DMR, 2 - P25).
 txMode: 2
 
-#
+# Relative sample level for VOX to activate.
 voxSampleLevel: 30.0
+# Amount of time (ms) from loss of active VOX level to drop audio.
+dropTimeMs: 180
+
+# Enables detection of MDC1200 packets on the PCM side of the bridge.
+#   (This is useful for pre-MDC to set the transmitting source ID.)
+detectAnalogMDC1200: false
 
 #
 # Logging Configuration
@@ -60,21 +70,8 @@ longitude: 0.0
 location: Anywhere, USA
 
 # Source "Radio ID" for transmitted audio frames
-sourceId: 4000
+sourceId: 1234567
 # Talkgroup ID for transmitted/received audio frames
 destinationId: 31611
 # Slot for received/transmitted audio frames
 slot: 1
-
-
-# Enable local audio over speakers
-localAudio: false
-# Enable PCM audio over UDP
-udpAudio: true
-# PCM over UDP send port
-udpSendPort: 34001
-# PCM over UDP send address destination
-udpSendAddress: "127.0.0.1"
-
-#udpRecievePort: 32001
-#udpRecieveAddress: 127.0.0.1

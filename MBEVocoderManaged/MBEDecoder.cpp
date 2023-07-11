@@ -70,6 +70,13 @@ namespace vocoder
             void set(float value) { m_decoder->setGainAdjust(value); }
         }
 
+        /// <summary>Flag indicating the MBE decoder is using AGC.</summary>
+        property bool AutoGain
+        {
+            bool get() { return m_decoder->getAutoGain(); }
+            void set(bool value) { m_decoder->setAutoGain(value); }
+        }
+
         /// <summary>Decodes the given MBE codewords to PCM samples using the decoder mode.</summary>
         Int32 decodeF(array<Byte>^ codeword, [Out] array<float>^% samples)
         {

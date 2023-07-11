@@ -28,6 +28,7 @@ using Serilog;
 
 using dvmbridge.FNE;
 using dvmbridge.FNE.DMR;
+using dvmbridge.MDC1200;
 
 using vocoder;
 
@@ -135,21 +136,24 @@ namespace dvmbridge
 
         private const int AUDIO_BUFFER_MS = 20;
         private const int AUDIO_NO_BUFFERS = 2;
-        private const int DMR_AUDIO_DROP_MS = 60;
-        private const int P25_AUDIO_DROP_MS = 180;
+        private const int AFSK_AUDIO_BUFFER_MS = 60;
+        private const int AFSK_AUDIO_NO_BUFFERS = 4;
 
         private const int TX_MODE_DMR = 1;
         private const int TX_MODE_P25 = 2;
 
         protected FneBase fne;
 
+        private bool callInProgress = false;
+
         private SlotStatus[] status;
 
-        private WaveFormat waveFormat;                 //
-        private BufferedWaveProvider waveProvider;     //
+        private WaveFormat waveFormat;                  //
+        private BufferedWaveProvider waveProvider;      //
 
         private Task waveInRecorder;
         private WaveInEvent waveIn;
+        private MDCWaveIn mdcProcessor;
 
         private Stopwatch dropAudio;
         bool audioDetect;
@@ -162,6 +166,8 @@ namespace dvmbridge
 
         private Random rand;
         private uint txStreamId;
+
+        private uint srcIdOverride = 0;
 
         /*
         ** Properties
@@ -311,26 +317,59 @@ namespace dvmbridge
                     this.waveIn.DataAvailable += WaveIn_DataAvailable;
 
                     this.waveIn.StartRecording();
+
+                    this.mdcProcessor = new MDCWaveIn(waveFormat, Program.WaveInDevice);
+                    this.mdcProcessor.BufferMilliseconds = AFSK_AUDIO_BUFFER_MS;
+                    this.mdcProcessor.NumberOfBuffers = AFSK_AUDIO_NO_BUFFERS;
+
+                    if (Program.Configuration.DetectAnalogMDC1200)
+                    {
+                        this.mdcProcessor.MDCPacketDetected += MdcProcessor_MDCPacketDetected;
+                        this.mdcProcessor.StartRecording();
+                    }
                 });
             }
 
             // initialize DMR vocoders
             dmrDecoder = new MBEDecoderManaged(MBEMode.DMRAMBE);
-            dmrDecoder.GainAdjust = Program.Configuration.AudioGain;
+            dmrDecoder.GainAdjust = Program.Configuration.RxAudioGain;
+            dmrDecoder.AutoGain = Program.Configuration.RxAutoGain;
             dmrEncoder = new MBEEncoderManaged(MBEMode.DMRAMBE);
-            dmrEncoder.GainAdjust = Program.Configuration.AudioGain;
+            dmrEncoder.GainAdjust = Program.Configuration.TxAudioGain;
 
             // initialize P25 vocoders
             p25Decoder = new MBEDecoderManaged(MBEMode.IMBE);
-            p25Decoder.GainAdjust = Program.Configuration.AudioGain;
+            p25Decoder.GainAdjust = Program.Configuration.RxAudioGain;
+            p25Decoder.AutoGain = Program.Configuration.RxAutoGain;
             p25Encoder = new MBEEncoderManaged(MBEMode.IMBE);
-            p25Encoder.GainAdjust = Program.Configuration.AudioGain;
+            p25Encoder.GainAdjust = Program.Configuration.TxAudioGain;
 
             embeddedData = new EmbeddedData();
             ambeBuffer = new byte[27];
 
             netLDU1 = new byte[9 * 25];
             netLDU2 = new byte[9 * 25];
+        }
+
+        /// <summary>
+        /// Event that occurs when an MDC1200 frame is detected in the PCM audio.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="frameCount"></param>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
+        private void MdcProcessor_MDCPacketDetected(object sender, int frameCount, MDCPacket first, MDCPacket second)
+        {
+            if (first.Operation == OpType.PTT_ID)
+            {
+                if (Program.Configuration.OverrideSourceIdFromMDC)
+                {
+                    // do some nasty-nasty to convert MDC hex to integer
+                    string txtSrcId = first.Target.ToString("X4");
+                    srcIdOverride = Convert.ToUInt32(txtSrcId);
+                    Log.Logger.Information($"({SystemName}) Local Traffic *MDC DETECT     * PEER {fne.PeerId} SRC_ID {srcIdOverride}");
+                }
+            }
         }
 
         /// <summary>
@@ -344,6 +383,9 @@ namespace dvmbridge
 
             FnePeer peer = (FnePeer)fne;
             uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                srcId = srcIdOverride;
+
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             // handle Rx triggered by internal VOX
@@ -360,8 +402,7 @@ namespace dvmbridge
             else
             {
                 // if we've exceeded the audio drop timeout, then really drop the audio
-                int dropTimeMs = (Program.Configuration.TxMode == TX_MODE_P25) ? P25_AUDIO_DROP_MS : DMR_AUDIO_DROP_MS;
-                if (dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > dropTimeMs))
+                if (dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > Program.Configuration.DropTimeMs))
                 {
                     if (audioDetect)
                     {
@@ -370,16 +411,20 @@ namespace dvmbridge
                         audioDetect = false;
                         dropAudio.Reset();
 #if !ENCODER_LOOPBACK_TEST
-                        switch (Program.Configuration.TxMode)
+                        if (!callInProgress)
                         {
-                            case TX_MODE_DMR:
-                                SendDMRTerminator();
-                                break;
-                            case TX_MODE_P25:
-                                SendP25TDU();
-                                break;
+                            switch (Program.Configuration.TxMode)
+                            {
+                                case TX_MODE_DMR:
+                                    SendDMRTerminator();
+                                    break;
+                                case TX_MODE_P25:
+                                    SendP25TDU();
+                                    break;
+                            }
                         }
 #endif
+                        srcIdOverride = 0;
                         txStreamId = 0;
                     }
                 }
@@ -405,6 +450,7 @@ namespace dvmbridge
                 // trigger readback of metering buffer
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
                 this.meterProvider.Read(temp, 0, temp.Length);
+
                 if (audioDetect)
                 {
                     switch (Program.Configuration.TxMode)
@@ -454,6 +500,13 @@ namespace dvmbridge
 
             if (waveInRecorder != null)
             {
+                if (this.mdcProcessor != null)
+                {
+                    mdcProcessor.StopRecording();
+                    mdcProcessor.Dispose();
+                    mdcProcessor = null;
+                }
+
                 if (this.waveIn != null)
                 {
                     waveIn.StopRecording();

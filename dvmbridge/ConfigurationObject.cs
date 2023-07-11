@@ -73,22 +73,41 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public float AudioGain = 3.0f;
+        public float RxAudioGain = 3.0f;
 
         /// <summary>
         /// 
         /// </summary>
-        public int TxMode;
+        public bool RxAutoGain = false;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public float TxAudioGain = 3.0f;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int TxMode = 1;
 
         /// <summary>
         /// 
         /// </summary>
         public float VoxSampleLevel = 30.0f;
+        /// <summary>
+        /// 
+        /// </summary>
+        public int DropTimeMs = 180;
 
         /// <summary>
         /// 
         /// </summary>
-        public string Name;
+        public bool DetectAnalogMDC1200 = false;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Name = "BRIDGE";
         /// <summary>
         /// 
         /// </summary>
@@ -110,6 +129,12 @@ namespace dvmbridge
         /// 
         /// </summary>
         public int SourceId;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool OverrideSourceIdFromMDC = false;
+
         /// <summary>
         /// 
         /// </summary>
@@ -118,7 +143,7 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public int Slot;
+        public int Slot = 1;
 
         /// <summary>
         /// 

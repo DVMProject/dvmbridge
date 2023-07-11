@@ -149,11 +149,16 @@ namespace dvmbridge
 
             data = new byte[DMR_FRAME_LENGTH_BYTES];
 
+            uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                srcId = srcIdOverride;
+            uint dstId = (uint)Program.Configuration.DestinationId;
+
             // generate DMR LC
             LC dmrLC = new LC();
             dmrLC.FLCO = (byte)DMRFLCO.FLCO_GROUP;
-            dmrLC.SrcId = (uint)Program.Configuration.SourceId;
-            dmrLC.DstId = (uint)Program.Configuration.DestinationId;
+            dmrLC.SrcId = srcId;
+            dmrLC.DstId = dstId;
 
             // generate the Slot TYpe
             SlotType slotType = new SlotType();
@@ -181,6 +186,8 @@ namespace dvmbridge
         private void DMREncodeAudioFrame(byte[] pcm)
         {
             uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                srcId = srcIdOverride;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             byte slot = (byte)Program.Configuration.Slot;
@@ -236,8 +243,8 @@ namespace dvmbridge
                     // generate DMR LC
                     LC dmrLC = new LC();
                     dmrLC.FLCO = (byte)DMRFLCO.FLCO_GROUP;
-                    dmrLC.SrcId = (uint)Program.Configuration.SourceId;
-                    dmrLC.DstId = (uint)Program.Configuration.DestinationId;
+                    dmrLC.SrcId = srcId;
+                    dmrLC.DstId = dstId;
                     embeddedData.SetLC(dmrLC);
 
                     // generate the Slot TYpe
@@ -384,6 +391,7 @@ namespace dvmbridge
                 // is this a new call stream?
                 if (e.StreamId != status[e.Slot].RxStreamId)
                 {
+                    callInProgress = true;
                     status[e.Slot].RxStart = pktTime;
                     Log.Logger.Information($"({SystemName}) DMRD: Traffic *CALL START     * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} [STREAM ID {e.StreamId}]");
 
@@ -415,6 +423,7 @@ namespace dvmbridge
 
                 if ((e.FrameType == FrameType.DATA_SYNC) && (e.DataType == DMRDataType.TERMINATOR_WITH_LC) && (status[e.Slot].RxType != FrameType.TERMINATOR))
                 {
+                    callInProgress = false;
                     TimeSpan callDuration = pktTime - status[0].RxStart;
                     Log.Logger.Information($"({SystemName}) DMRD: Traffic *CALL END       * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} DUR {callDuration} [STREAM ID {e.StreamId}]");
                 }

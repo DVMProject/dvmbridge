@@ -89,12 +89,17 @@ namespace dvmbridge
         /// <param name="data"></param>
         private void CreateP25MessageHdr(byte duid, ref byte[] data)
         {
+            uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                srcId = srcIdOverride;
+            uint dstId = (uint)Program.Configuration.DestinationId;
+
             FneUtils.StringToBytes(Constants.TAG_P25_DATA, data, 0, Constants.TAG_P25_DATA.Length);
 
             data[4U] = P25Defines.LC_GROUP;                                                 // LCO
 
-            FneUtils.Write3Bytes((uint)Program.Configuration.SourceId, ref data, 5);        // Source Address
-            FneUtils.Write3Bytes((uint)Program.Configuration.DestinationId, ref data, 8);   // Destination Address
+            FneUtils.Write3Bytes(srcId, ref data, 5);                                       // Source Address
+            FneUtils.Write3Bytes(dstId, ref data, 8);                                       // Destination Address
 
             data[15U] = 0;                                                                  // MFId
 
@@ -623,6 +628,8 @@ namespace dvmbridge
             }
 
             uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                srcId = srcIdOverride;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             FnePeer peer = (FnePeer)fne;
@@ -798,12 +805,14 @@ namespace dvmbridge
                 // is this a new call stream?
                 if (e.StreamId != status[P25_FIXED_SLOT].RxStreamId && ((e.DUID != P25DUID.TDU) && (e.DUID != P25DUID.TDULC)))
                 {
+                    callInProgress = true;
                     status[P25_FIXED_SLOT].RxStart = pktTime;
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *CALL START     * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} [STREAM ID {e.StreamId}]");
                 }
 
                 if (((e.DUID == P25DUID.TDU) || (e.DUID == P25DUID.TDULC)) && (status[P25_FIXED_SLOT].RxType != FrameType.TERMINATOR))
                 {
+                    callInProgress = false;
                     TimeSpan callDuration = pktTime - status[P25_FIXED_SLOT].RxStart;
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *CALL END       * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} DUR {callDuration} [STREAM ID {e.StreamId}]");
                 }
