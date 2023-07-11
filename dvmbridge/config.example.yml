@@ -77,9 +77,9 @@ destinationId: 1
 slot: 1
 
 # Enable local audio over speakers
-localAudio: false
+localAudio: true
 # Enable PCM audio over UDP
-udpAudio: true
+udpAudio: false
 # PCM over UDP send port
 udpSendPort: 34001
 # PCM over UDP send address destination
