@@ -83,7 +83,7 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public int TxMode;
+        public int TxMode = 1;
 
         /// <summary>
         /// 
@@ -97,7 +97,12 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public string Name;
+        public bool DetectAnalogMDC1200 = false;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Name = "BRIDGE";
         /// <summary>
         /// 
         /// </summary>
@@ -119,6 +124,12 @@ namespace dvmbridge
         /// 
         /// </summary>
         public int SourceId;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool OverrideSourceIdFromMDC = false;
+
         /// <summary>
         /// 
         /// </summary>
@@ -127,7 +138,7 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public int Slot;
+        public int Slot = 1;
 
         /// <summary>
         /// 

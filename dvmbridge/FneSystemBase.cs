@@ -28,6 +28,7 @@ using Serilog;
 
 using dvmbridge.FNE;
 using dvmbridge.FNE.DMR;
+using dvmbridge.MDC1200;
 
 using vocoder;
 
@@ -133,6 +134,8 @@ namespace dvmbridge
 
         private const int AUDIO_BUFFER_MS = 20;
         private const int AUDIO_NO_BUFFERS = 2;
+        private const int AFSK_AUDIO_BUFFER_MS = 60;
+        private const int AFSK_AUDIO_NO_BUFFERS = 4;
 
         private const int TX_MODE_DMR = 1;
         private const int TX_MODE_P25 = 2;
@@ -141,11 +144,12 @@ namespace dvmbridge
 
         private SlotStatus[] status;
 
-        private WaveFormat waveFormat;                 //
-        private BufferedWaveProvider waveProvider;     //
+        private WaveFormat waveFormat;                  //
+        private BufferedWaveProvider waveProvider;      //
 
         private Task waveInRecorder;
         private WaveInEvent waveIn;
+        private MDCWaveIn mdcProcessor;
 
         private Stopwatch dropAudio;
         bool audioDetect;
@@ -158,6 +162,8 @@ namespace dvmbridge
 
         private Random rand;
         private uint txStreamId;
+
+        private uint srcIdOverride = 0;
 
         /*
         ** Properties
@@ -307,6 +313,16 @@ namespace dvmbridge
                     this.waveIn.DataAvailable += WaveIn_DataAvailable;
 
                     this.waveIn.StartRecording();
+
+                    this.mdcProcessor = new MDCWaveIn(waveFormat, Program.WaveInDevice);
+                    this.mdcProcessor.BufferMilliseconds = AFSK_AUDIO_BUFFER_MS;
+                    this.mdcProcessor.NumberOfBuffers = AFSK_AUDIO_NO_BUFFERS;
+
+                    if (Program.Configuration.DetectAnalogMDC1200)
+                    {
+                        this.mdcProcessor.MDCPacketDetected += MdcProcessor_MDCPacketDetected;
+                        this.mdcProcessor.StartRecording();
+                    }
                 });
             }
 
@@ -330,6 +346,27 @@ namespace dvmbridge
         }
 
         /// <summary>
+        /// Event that occurs when an MDC1200 frame is detected in the PCM audio.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="frameCount"></param>
+        /// <param name="first"></param>
+        /// <param name="second"></param>
+        private void MdcProcessor_MDCPacketDetected(object sender, int frameCount, MDCPacket first, MDCPacket second)
+        {
+            if (first.Operation == OpType.PTT_ID)
+            {
+                if (Program.Configuration.OverrideSourceIdFromMDC)
+                {
+                    // do some nasty-nasty to convert MDC hex to integer
+                    string txtSrcId = first.Target.ToString("X4");
+                    srcIdOverride = Convert.ToUInt32(txtSrcId);
+                    Log.Logger.Information($"({SystemName}) Local Traffic *MDC DETECT     * PEER {fne.PeerId} SRC_ID {srcIdOverride}");
+                }
+            }
+        }
+
+        /// <summary>
         /// Event that occurs when wave audio is detected.
         /// </summary>
         /// <param name="sender"></param>
@@ -340,6 +377,9 @@ namespace dvmbridge
 
             FnePeer peer = (FnePeer)fne;
             uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                srcId = srcIdOverride;
+
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             // handle Rx triggered by internal VOX
@@ -375,6 +415,7 @@ namespace dvmbridge
                                 break;
                         }
 #endif
+                        srcIdOverride = 0;
                         txStreamId = 0;
                     }
                 }
@@ -450,6 +491,13 @@ namespace dvmbridge
 
             if (waveInRecorder != null)
             {
+                if (this.mdcProcessor != null)
+                {
+                    mdcProcessor.StopRecording();
+                    mdcProcessor.Dispose();
+                    mdcProcessor = null;
+                }
+
                 if (this.waveIn != null)
                 {
                     waveIn.StopRecording();

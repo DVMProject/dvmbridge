@@ -20,6 +20,10 @@ voxSampleLevel: 30.0
 # Amount of time (ms) from loss of active VOX level to drop audio.
 dropTimeMs: 180
 
+# Enables detection of MDC1200 packets on the PCM side of the bridge.
+#   (This is useful for pre-MDC to set the transmitting source ID.)
+detectAnalogMDC1200: false
+
 #
 # Logging Configuration
 #   Logging Levels:
@@ -64,6 +68,9 @@ location: Anywhere, USA
 
 # Source "Radio ID" for transmitted audio frames
 sourceId: 1234567
+# Flag indicating the source "Radio ID" will be overridden from the detected
+# MDC1200 pre- PTT ID.
+overrideSourceIdFromMDC: false
 # Talkgroup ID for transmitted/received audio frames
 destinationId: 1
 # Slot for received/transmitted audio frames

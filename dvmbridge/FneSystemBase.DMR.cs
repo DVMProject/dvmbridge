@@ -149,11 +149,16 @@ namespace dvmbridge
 
             data = new byte[DMR_FRAME_LENGTH_BYTES];
 
+            uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                srcId = srcIdOverride;
+            uint dstId = (uint)Program.Configuration.DestinationId;
+
             // generate DMR LC
             LC dmrLC = new LC();
             dmrLC.FLCO = (byte)DMRFLCO.FLCO_GROUP;
-            dmrLC.SrcId = (uint)Program.Configuration.SourceId;
-            dmrLC.DstId = (uint)Program.Configuration.DestinationId;
+            dmrLC.SrcId = srcId;
+            dmrLC.DstId = dstId;
 
             // generate the Slot TYpe
             SlotType slotType = new SlotType();
@@ -181,6 +186,8 @@ namespace dvmbridge
         private void DMREncodeAudioFrame(byte[] pcm)
         {
             uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                srcId = srcIdOverride;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             byte slot = (byte)Program.Configuration.Slot;
@@ -236,8 +243,8 @@ namespace dvmbridge
                     // generate DMR LC
                     LC dmrLC = new LC();
                     dmrLC.FLCO = (byte)DMRFLCO.FLCO_GROUP;
-                    dmrLC.SrcId = (uint)Program.Configuration.SourceId;
-                    dmrLC.DstId = (uint)Program.Configuration.DestinationId;
+                    dmrLC.SrcId = srcId;
+                    dmrLC.DstId = dstId;
                     embeddedData.SetLC(dmrLC);
 
                     // generate the Slot TYpe
