@@ -465,6 +465,25 @@ namespace dvmbridge
         }
 
         /// <summary>
+        /// Helper to generate a leader tone.
+        /// </summary>
+        private void GenerateLeaderTone()
+        {
+            SignalGenerator gen = new SignalGenerator(waveFormat.SampleRate, waveFormat.Channels)
+            {
+                Gain = 0.2f,
+                Frequency = Program.Configuration.PreambleTone,
+                Type = SignalGeneratorType.Sin
+            };
+
+            SampleToAudioProvider16 smpTo16 = new SampleToAudioProvider16(gen);
+            int bufLen = SampleTimeConvert.MSToSampleBytes(waveFormat, Program.Configuration.PreambleLength);
+            byte[] preambleBuf = new byte[bufLen];
+            smpTo16.Read(preambleBuf, 0, bufLen);
+            waveProvider.AddSamples(preambleBuf, 0, preambleBuf.Length);
+        }
+
+        /// <summary>
         /// Starts the main execution loop for this <see cref="FneSystemBase"/>.
         /// </summary>
         public void Start()

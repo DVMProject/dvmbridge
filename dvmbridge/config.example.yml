@@ -26,6 +26,36 @@ dropTimeMs: 180
 #   (This is useful for pre-MDC to set the transmitting source ID.)
 detectAnalogMDC1200: false
 
+# Flag indicating whether the analog preamble leader is enabled.
+#   (This enables a leader control tone before audio frames from the 
+#    network are sent.)
+preambleLeaderTone: false
+# Frequency of preamble tone.
+preambleTone: 2175
+# Amount of time (ms) to transmit preamble tone.
+preambleLength: 200
+
+# Textual Name
+name: BRIDGE
+# Network Peer ID
+peerId: 9000123
+# Hostname/IP address of FNE master to connect to.
+address: 127.0.0.1
+# Port number to connect to.
+port: 62031
+# FNE access password.
+passphrase: RPT1234
+
+# Source "Radio ID" for transmitted audio frames
+sourceId: 1234567
+# Flag indicating the source "Radio ID" will be overridden from the detected
+# MDC1200 pre- PTT ID.
+overrideSourceIdFromMDC: false
+# Talkgroup ID for transmitted/received audio frames
+destinationId: 1
+# Slot for received/transmitted audio frames
+slot: 1
+
 #
 # Logging Configuration
 #   Logging Levels:
@@ -45,35 +75,3 @@ log:
     filePath: .
     # Log filename prefix.
     fileRoot: dvmbridge
-
-# Textual Name
-name: BRIDGE
-# Network Peer ID
-peerId: 9000123
-# Hostname/IP address of FNE master to connect to.
-address: 127.0.0.1
-# Port number to connect to.
-port: 62031
-# FNE access password.
-passphrase: RPT1234
-
-#
-rxFrequency: 0
-#
-txFrequency: 0
-#
-latitude: 0.0
-#
-longitude: 0.0
-#
-location: Anywhere, USA
-
-# Source "Radio ID" for transmitted audio frames
-sourceId: 1234567
-# Flag indicating the source "Radio ID" will be overridden from the detected
-# MDC1200 pre- PTT ID.
-overrideSourceIdFromMDC: false
-# Talkgroup ID for transmitted/received audio frames
-destinationId: 1
-# Slot for received/transmitted audio frames
-slot: 1

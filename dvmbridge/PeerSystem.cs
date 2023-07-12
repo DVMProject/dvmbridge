@@ -76,6 +76,35 @@ namespace dvmbridge
                     endpoint = new IPEndPoint(addresses[0], Program.Configuration.Port);
             }
 
+            Log.Logger.Information($"    Peer ID: {Program.Configuration.PeerId}");
+            Log.Logger.Information($"    Master Addresss: {Program.Configuration.Address}");
+            Log.Logger.Information($"    Master Port: {Program.Configuration.Port}");
+            string rxAutoGainEnabled = (Program.Configuration.RxAutoGain) ? "yes" : "no";
+            Log.Logger.Information($"    Rx Automatic Gain: {rxAutoGainEnabled}");
+            Log.Logger.Information($"    Tx Gain (audio to network): {Program.Configuration.TxAudioGain}");
+            switch (Program.Configuration.TxMode)
+            {
+                case 1:
+                    Log.Logger.Information($"    Tx Audio Mode: DMR");
+                    break;
+                case 2:
+                    Log.Logger.Information($"    Tx Audio Mode: P25");
+                    break;
+            }
+            Log.Logger.Information($"    VOX Sample Level: {Program.Configuration.VoxSampleLevel}");
+            Log.Logger.Information($"    VOX Dropout Time: {Program.Configuration.DropTimeMs} ms");
+            string detectAnalogMDC1200Enabled = (Program.Configuration.DetectAnalogMDC1200) ? "yes" : "no";
+            Log.Logger.Information($"    Detect Analog MDC1200: {detectAnalogMDC1200Enabled}");
+            string preambleLeaderEnabled = (Program.Configuration.PreambleLeaderTone) ? "yes" : "no";
+            Log.Logger.Information($"    Preamble Leader: {preambleLeaderEnabled}");
+            Log.Logger.Information($"    Preamble Tone: {Program.Configuration.PreambleTone} Hz");
+            Log.Logger.Information($"    Preamble Length: {Program.Configuration.PreambleLength} ms");
+            Log.Logger.Information($"    Source Radio ID: {Program.Configuration.SourceId}");
+            string overrideSourceIdFromMDCEnabled = (Program.Configuration.OverrideSourceIdFromMDC) ? "yes" : "no";
+            Log.Logger.Information($"    Override Source Radio ID from MDC: {overrideSourceIdFromMDCEnabled}");
+            Log.Logger.Information($"    Destination ID: {Program.Configuration.DestinationId}");
+            Log.Logger.Information($"    Destination DMR Slot: {Program.Configuration.Slot}");
+
             FnePeer peer = new FnePeer(Program.Configuration.Name, Program.Configuration.PeerId, endpoint);
 
             // set configuration parameters

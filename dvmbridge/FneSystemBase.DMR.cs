@@ -394,6 +394,8 @@ namespace dvmbridge
                     callInProgress = true;
                     status[e.Slot].RxStart = pktTime;
                     Log.Logger.Information($"({SystemName}) DMRD: Traffic *CALL START     * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} [STREAM ID {e.StreamId}]");
+                    if (Program.Configuration.PreambleLeaderTone)
+                        GenerateLeaderTone();
 
                     // if we can, use the LC from the voice header as to keep all options intact
                     if ((e.FrameType == FrameType.DATA_SYNC) && (e.DataType == DMRDataType.VOICE_LC_HEADER))
