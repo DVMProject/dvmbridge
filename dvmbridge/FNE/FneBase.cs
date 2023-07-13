@@ -32,6 +32,169 @@ using dvmbridge.FNE.EDAC;
 namespace dvmbridge.FNE
 {
     /// <summary>
+    /// Structure containing detailed information about a connected peer.
+    /// </summary>
+    public class PeerDetails
+    {
+        /// <summary>
+        /// Identity
+        /// </summary>
+        public string Identity;
+        /// <summary>
+        /// Receive Frequency
+        /// </summary>
+        public uint RxFrequency;
+        /// <summary>
+        /// Transmit Frequency
+        /// </summary>
+        public uint TxFrequency;
+
+        /// <summary>
+        /// Software Identifier
+        /// </summary>
+        public string Software;
+
+        /*
+        ** System Information
+        */
+        /// <summary>
+        /// Latitude
+        /// </summary>
+        public double Latitude;
+        /// <summary>
+        /// Longitude
+        /// </summary>
+        public double Longitude;
+        /// <summary>
+        /// Height
+        /// </summary>
+        public int Height;
+        /// <summary>
+        /// Location
+        /// </summary>
+        public string Location;
+
+        /*
+        ** Channel Data
+        */
+        /// <summary>
+        /// Transmit Offset (Mhz)
+        /// </summary>
+        public float TxOffsetMhz;
+        /// <summary>
+        /// Channel Bandwidth (Khz)
+        /// </summary>
+        public float ChBandwidthKhz;
+        /// <summary>
+        /// Channel ID
+        /// </summary>
+        public byte ChannelID;
+        /// <summary>
+        /// Channel Number
+        /// </summary>
+        public uint ChannelNo;
+        /// <summary>
+        /// Transmit Power
+        /// </summary>
+        public uint TxPower;
+
+        /*
+        ** RCON
+        */
+        /// <summary>
+        /// RCON Password
+        /// </summary>
+        public string Password;
+        /// <summary>
+        /// RCON Port
+        /// </summary>
+        public int Port;
+
+        /*
+        ** Methods
+        */
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PeerDetails"/> class.
+        /// </summary>
+        public PeerDetails()
+        {
+            /* stub */
+        }
+    } // public class PeerDetails
+
+    /// <summary>
+    /// Structure containing information about a connected peer.
+    /// </summary>
+    public class PeerInformation
+    {
+        /// <summary>
+        /// Peer ID
+        /// </summary>
+        public uint PeerID;
+
+        /// <summary>
+        /// Stream ID
+        /// </summary>
+        public uint StreamID;
+
+        /// <summary>
+        /// RTP Packet Sequence
+        /// </summary>
+        public ushort PacketSequence;
+        /// <summary>
+        /// Next expected RTP Packet Sequence
+        /// </summary>
+        public ushort NextPacketSequence;
+
+        /// <summary>
+        /// Peer IP EndPoint
+        /// </summary>
+        public IPEndPoint EndPoint;
+
+        /// <summary>
+        /// Salt value used for authentication.
+        /// </summary>
+        public uint Salt;
+
+        /// <summary>
+        /// Connection State
+        /// </summary>
+        public ConnectionState State;
+
+        /// <summary>
+        /// Flag indicating peer is "connected".
+        /// </summary>
+        public bool Connection;
+
+        /// <summary>
+        /// Number of pings received.
+        /// </summary>
+        public int PingsReceived;
+        /// <summary>
+        /// Date/Time of last ping.
+        /// </summary>
+        public DateTime LastPing;
+
+        /// <summary>
+        /// Peer Details Structure
+        /// </summary>
+        public PeerDetails Details = null;
+
+        /*
+        ** Methods
+        */
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PeerInformation"/> class.
+        /// </summary>
+        public PeerInformation()
+        {
+            Details = new PeerDetails();
+        }
+    } // public class PeerInformation
+
+    /// <summary>
     /// Callback used to validate incoming DMR data.
     /// </summary>
     /// <param name="peerId">Peer ID</param>
@@ -322,169 +485,6 @@ namespace dvmbridge.FNE
             Buffer.BlockCopy(data, 0, Data, 0, data.Length);
         }
     } // public class NXDNDataReceivedEvent : EventArgs
-
-    /// <summary>
-    /// Structure containing detailed information about a connected peer.
-    /// </summary>
-    public class PeerDetails
-    {
-        /// <summary>
-        /// Identity
-        /// </summary>
-        public string Identity;
-        /// <summary>
-        /// Receive Frequency
-        /// </summary>
-        public uint RxFrequency;
-        /// <summary>
-        /// Transmit Frequency
-        /// </summary>
-        public uint TxFrequency;
-
-        /// <summary>
-        /// Software Identifier
-        /// </summary>
-        public string Software;
-
-        /*
-        ** System Information
-        */
-        /// <summary>
-        /// Latitude
-        /// </summary>
-        public double Latitude;
-        /// <summary>
-        /// Longitude
-        /// </summary>
-        public double Longitude;
-        /// <summary>
-        /// Height
-        /// </summary>
-        public int Height;
-        /// <summary>
-        /// Location
-        /// </summary>
-        public string Location;
-
-        /*
-        ** Channel Data
-        */
-        /// <summary>
-        /// Transmit Offset (Mhz)
-        /// </summary>
-        public float TxOffsetMhz;
-        /// <summary>
-        /// Channel Bandwidth (Khz)
-        /// </summary>
-        public float ChBandwidthKhz;
-        /// <summary>
-        /// Channel ID
-        /// </summary>
-        public byte ChannelID;
-        /// <summary>
-        /// Channel Number
-        /// </summary>
-        public uint ChannelNo;
-        /// <summary>
-        /// Transmit Power
-        /// </summary>
-        public uint TxPower;
-
-        /*
-        ** RCON
-        */
-        /// <summary>
-        /// RCON Password
-        /// </summary>
-        public string Password;
-        /// <summary>
-        /// RCON Port
-        /// </summary>
-        public int Port;
-
-        /*
-        ** Methods
-        */
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PeerDetails"/> class.
-        /// </summary>
-        public PeerDetails()
-        {
-            /* stub */
-        }
-    } // public class PeerDetails
-
-    /// <summary>
-    /// Structure containing information about a connected peer.
-    /// </summary>
-    public class PeerInformation
-    {
-        /// <summary>
-        /// Peer ID
-        /// </summary>
-        public uint PeerID;
-
-        /// <summary>
-        /// Stream ID
-        /// </summary>
-        public uint StreamID;
-
-        /// <summary>
-        /// RTP Packet Sequence
-        /// </summary>
-        public ushort PacketSequence;
-        /// <summary>
-        /// Next expected RTP Packet Sequence
-        /// </summary>
-        public ushort NextPacketSequence;
-
-        /// <summary>
-        /// Peer IP EndPoint
-        /// </summary>
-        public IPEndPoint EndPoint;
-
-        /// <summary>
-        /// Salt value used for authentication.
-        /// </summary>
-        public uint Salt;
-
-        /// <summary>
-        /// Connection State
-        /// </summary>
-        public ConnectionState State;
-
-        /// <summary>
-        /// Flag indicating peer is "connected".
-        /// </summary>
-        public bool Connection;
-
-        /// <summary>
-        /// Number of pings received.
-        /// </summary>
-        public int PingsReceived;
-        /// <summary>
-        /// Date/Time of last ping.
-        /// </summary>
-        public DateTime LastPing;
-
-        /// <summary>
-        /// Peer Details Structure
-        /// </summary>
-        public PeerDetails Details = null;
-
-        /*
-        ** Methods
-        */
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PeerInformation"/> class.
-        /// </summary>
-        public PeerInformation()
-        {
-            Details = new PeerDetails();
-        }
-    } // public class PeerInformation
 
     /// <summary>
     /// Callback used to process whether or not a peer is being ignored for traffic.
