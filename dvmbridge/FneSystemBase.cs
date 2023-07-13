@@ -362,10 +362,14 @@ namespace dvmbridge
             {
                 if (Program.Configuration.OverrideSourceIdFromMDC)
                 {
-                    // do some nasty-nasty to convert MDC hex to integer
-                    string txtSrcId = first.Target.ToString("X4");
-                    srcIdOverride = Convert.ToUInt32(txtSrcId);
-                    Log.Logger.Information($"({SystemName}) Local Traffic *MDC DETECT     * PEER {fne.PeerId} SRC_ID {srcIdOverride}");
+                    try
+                    {
+                        // do some nasty-nasty to convert MDC hex to integer
+                        string txtSrcId = first.Target.ToString("X4");
+                        srcIdOverride = Convert.ToUInt32(txtSrcId);
+                        Log.Logger.Information($"({SystemName}) Local Traffic *MDC DETECT     * PEER {fne.PeerId} SRC_ID {srcIdOverride}");
+                    }
+                    catch (Exception) { /* stub */ }
                 }
             }
         }
