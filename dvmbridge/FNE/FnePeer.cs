@@ -312,7 +312,7 @@ namespace dvmbridge.FNE
                         continue;
                     }
 
-                    if (message.Length < 4)
+                    if (message.Length < 1)
                     {
                         Log(LogLevel.WARNING, $"({systemName}) Malformed packet (from {frame.Endpoint}) -- {FneUtils.HexDump(message, 0)}");
                         continue;
