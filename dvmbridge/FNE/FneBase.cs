@@ -99,14 +99,14 @@ namespace dvmbridge.FNE
         public uint TxPower;
 
         /*
-        ** RCON
+        ** REST API
         */
         /// <summary>
-        /// RCON Password
+        /// REST API Password
         /// </summary>
         public string Password;
         /// <summary>
-        /// RCON Port
+        /// REST API Port
         /// </summary>
         public int Port;
 
@@ -731,32 +731,6 @@ namespace dvmbridge.FNE
         public static Tuple<byte, byte> CreateOpcode(byte func, byte subFunc = Constants.NET_SUBFUNC_NOP)
         {
             return new Tuple<byte, byte>(func, subFunc);
-        }
-
-        /// <summary>
-        /// Helper to pack a peer ID into a byte array.
-        /// </summary>
-        /// <param name="peerId">Peer ID.</param>
-        /// <returns></returns>
-        protected byte[] PackPeerId(uint peerId)
-        {
-            byte[] bytes = new byte[4];
-            FneUtils.WriteBytes(peerId, ref bytes, 0);
-            return bytes;
-        }
-
-        /// <summary>
-        /// Helper to generate a tagged response.
-        /// </summary>
-        /// <param name="tag"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        protected byte[] Response(string tag, byte[] data)
-        {
-            byte[] res = new byte[tag.Length + data.Length];
-            FneUtils.StringToBytes(tag, res, 0, tag.Length);
-            Buffer.BlockCopy(data, 0, res, tag.Length, data.Length);
-            return res;
         }
 
         /// <summary>

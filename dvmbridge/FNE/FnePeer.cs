@@ -262,17 +262,6 @@ namespace dvmbridge.FNE
         }
 
         /// <summary>
-        /// Helper to send a tagged message to the master.
-        /// </summary>
-        /// <param name="opcode">Opcode</param>
-        /// <param name="tag">Tag from <see cref="Constants"/></param>
-        /// <param name="message">Byte array containing message to send</param>
-        public void SendMasterTagged(Tuple<byte, byte> opcode, string tag, byte[] message)
-        {
-            SendMaster(opcode, Response(tag, message));
-        }
-
-        /// <summary>
         /// Helper to update the RTP packet sequence.
         /// </summary>
         /// <param name="reset"></param>
@@ -470,10 +459,11 @@ namespace dvmbridge.FNE
                                         byte[] calcHash = FneUtils.sha256_hash(inBuf);
 
                                         // send message to master
-                                        byte[] res = new byte[calcHash.Length + 4];
-                                        Buffer.BlockCopy(PackPeerId(this.peerId), 0, res, 0, 4);
-                                        Buffer.BlockCopy(calcHash, 0, res, 4, calcHash.Length);
-                                        SendMasterTagged(CreateOpcode(Constants.NET_FUNC_RPTK), Constants.TAG_REPEATER_AUTH, res);
+                                        byte[] res = new byte[calcHash.Length + 8];
+                                        FneUtils.StringToBytes(Constants.TAG_REPEATER_AUTH, res, 0, 4);
+                                        FneUtils.WriteBytes(peerId, ref res, 4);
+                                        Buffer.BlockCopy(calcHash, 0, res, 8, calcHash.Length);
+                                        SendMaster(CreateOpcode(Constants.NET_FUNC_RPTK), res);
 
                                         info.State = ConnectionState.WAITING_AUTHORISATION;
                                     }
@@ -540,11 +530,12 @@ namespace dvmbridge.FNE
                                             }
 
                                             // send message to master
-                                            byte[] res = new byte[json.Length + 9];
-                                            Buffer.BlockCopy(PackPeerId(this.peerId), 0, res, 0, 4);
-                                            FneUtils.StringToBytes(json, res, 4, json.Length);
+                                            byte[] res = new byte[json.Length + 8];
+                                            FneUtils.StringToBytes(Constants.TAG_REPEATER_CONFIG, res, 0, 4);
+                                            FneUtils.WriteBytes(peerId, ref res, 4);
+                                            FneUtils.StringToBytes(json, res, 8, json.Length);
+                                            SendMaster(CreateOpcode(Constants.NET_FUNC_RPTC), res);
 
-                                            SendMasterTagged(CreateOpcode(Constants.NET_FUNC_RPTC), Constants.TAG_REPEATER_CONFIG, res);
                                             info.State = ConnectionState.WAITING_CONFIG;
                                         }
                                         else
@@ -649,14 +640,22 @@ namespace dvmbridge.FNE
                         PingsAcked = 0;
                         info.State = ConnectionState.WAITING_LOGIN;
 
-                        SendMasterTagged(CreateOpcode(Constants.NET_FUNC_RPTL), Constants.TAG_REPEATER_LOGIN, PackPeerId(peerId));
+                        // send message to master
+                        byte[] res = new byte[8];
+                        FneUtils.StringToBytes(Constants.TAG_REPEATER_LOGIN, res, 0, 4);
+                        FneUtils.WriteBytes(peerId, ref res, 4);
+                        SendMaster(CreateOpcode(Constants.NET_FUNC_RPTL), res);
+
                         Log(LogLevel.INFO, $"({systemName}) Sending login request to MASTER {masterEndpoint}");
                     }
 
                     // if we are connected, sent a ping to the master and increment the counter
                     if (info.Connection && info.State == ConnectionState.RUNNING)
                     {
-                        SendMasterTagged(CreateOpcode(Constants.NET_FUNC_PING), Constants.TAG_REPEATER_PING, PackPeerId(peerId));
+                        // send message to master
+                        byte[] res = new byte[1];
+                        SendMaster(CreateOpcode(Constants.NET_FUNC_PING), res);
+
                         PingsSent++;
                         Log(LogLevel.DEBUG, $"({systemName}) RPTPING sent to MASTER {masterEndpoint}; pings since connected {PingsSent}");
                     }

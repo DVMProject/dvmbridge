@@ -195,27 +195,12 @@ namespace dvmbridge.FNE
         public const string TAG_P25_DATA = "P25D";
         public const string TAG_NXDN_DATA = "NXDD";
 
-        public const string TAG_MASTER_WL_RID = "MSTWRID";
-        public const string TAG_MASTER_BL_RID = "MSTBRID";
-        public const string TAG_MASTER_ACTIVE_TGS = "MSTTID";
-        public const string TAG_MASTER_DEACTIVE_TGS = "MSTDTID";
-
-        public const string TAG_MASTER_NAK = "MSTNAK";
-        public const string TAG_MASTER_CLOSING = "MSTCL";
-        public const string TAG_MASTER_PONG = "MSTPONG";
-
         public const string TAG_REPEATER_LOGIN = "RPTL";
         public const string TAG_REPEATER_AUTH = "RPTK";
         public const string TAG_REPEATER_CONFIG = "RPTC";
 
-        public const string TAG_REPEATER_ACK = "RPTACK";
-        public const string TAG_REPEATER_CLOSING = "RPTCL";
-        public const string TAG_REPEATER_PING = "RPTPING";
-
-        public const string TAG_REPEATER_GRANT = "RPTGRNT";
-
-        public const string TAG_TRANSFER_ACT_LOG = "TRNSLOG";
-        public const string TAG_TRANSFER_DIAG_LOG = "TRNSDIAG";
+        public const string TAG_REPEATER_PING = "RPTP";
+        public const string TAG_REPEATER_GRANT = "RPTG";
 
         /*
         ** Timers
