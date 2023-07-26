@@ -98,13 +98,14 @@ namespace dvmbridge
             FneUtils.Write3Bytes(srcId, ref data, 5);                                       // Source Address
             FneUtils.Write3Bytes(dstId, ref data, 8);                                       // Destination Address
 
+            data[11U] = 0;                                                                  // System ID
+            data[12U] = 0;
+
             data[15U] = 0;                                                                  // MFId
 
             data[16U] = 0;                                                                  // Network ID
             data[17U] = 0;
             data[18U] = 0;
-            data[11U] = 0;                                                                  // System ID
-            data[12U] = 0;
 
             data[20U] = 0;                                                                  // LSD 1
             data[21U] = 0;                                                                  // LSD 2
