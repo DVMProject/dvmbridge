@@ -121,7 +121,7 @@ namespace dvmbridge
             Console.WriteLine();
 
             Console.WriteLine(string.Format("usage: {0} [-h | --help][-c | --config <path to configuration file>][-l | --log-on-console][-i <wave in device no.>][-o <wave out device no.>]",
-                Path.GetFileNameWithoutExtension(fileName)));
+            Path.GetFileNameWithoutExtension(fileName)));
             Console.WriteLine();
             Console.WriteLine("Options:");
             p.WriteOptionDescriptions(Console.Out);

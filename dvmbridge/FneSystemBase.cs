@@ -23,6 +23,8 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Net;
 
 using Serilog;
 

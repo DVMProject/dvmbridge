@@ -78,3 +78,12 @@ log:
     filePath: .
     # Log filename prefix.
     fileRoot: dvmbridge
+
+# Enable local audio over speakers
+localAudio: true
+# Enable PCM audio over UDP
+udpAudio: false
+# PCM over UDP send port
+udpSendPort: 34001
+# PCM over UDP send address destination
+udpSendAddress: "127.0.0.1"

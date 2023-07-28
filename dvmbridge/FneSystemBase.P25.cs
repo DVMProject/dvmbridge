@@ -23,6 +23,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Net;
 
 using Serilog;
 
@@ -68,7 +70,6 @@ namespace dvmbridge
         {
             return true;
         }
-
         /// <summary>
         /// Event handler used to pre-process incoming P25 data.
         /// </summary>
@@ -78,7 +79,6 @@ namespace dvmbridge
         {
             return;
         }
-
         /// <summary>
         /// Creates an P25 frame message header.
         /// </summary>
@@ -129,6 +129,7 @@ namespace dvmbridge
             byte[] payload = new byte[200];
             CreateP25MessageHdr((byte)P25DUID.TDU, ref payload);
             payload[23U] = P25_MSG_HDR_SIZE;
+            //NET_FUNC_GRANT
 
             // if this TDU is demanding a grant, set the grant demand control bit
             if (grantDemand)
@@ -692,63 +693,94 @@ namespace dvmbridge
         /// <param name="e"></param>
         private void P25DecodeAudioFrame(byte[] ldu, P25DataReceivedEvent e)
         {
-            // decode 9 IMBE codewords into PCM samples
-            for (int n = 0; n < 9; n++)
+            UdpClient udpClient = new UdpClient();
+            try
             {
-                byte[] imbe = new byte[IMBE_BUF_LEN];
-                switch (n)
+                // 
+                // decode 9 IMBE codewords into PCM samples
+                for (int n = 0; n < 9; n++)
                 {
-                    case 0:
-                        Buffer.BlockCopy(ldu, 10, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                    case 1:
-                        Buffer.BlockCopy(ldu, 26, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                    case 2:
-                        Buffer.BlockCopy(ldu, 55, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                    case 3:
-                        Buffer.BlockCopy(ldu, 80, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                    case 4:
-                        Buffer.BlockCopy(ldu, 105, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                    case 5:
-                        Buffer.BlockCopy(ldu, 130, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                    case 6:
-                        Buffer.BlockCopy(ldu, 155, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                    case 7:
-                        Buffer.BlockCopy(ldu, 180, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                    case 8:
-                        Buffer.BlockCopy(ldu, 204, imbe, 0, IMBE_BUF_LEN);
-                        break;
-                }
-
-                short[] samples = null;
-                int errs = p25Decoder.decode(imbe, out samples);
-                if (samples != null)
-                {
-                    Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} VC{n} ERRS {errs} [STREAM ID {e.StreamId}]");
-                    // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
-                    // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
-
-                    int pcmIdx = 0;
-                    byte[] pcm = new byte[samples.Length * 2];
-                    for (int smpIdx = 0; smpIdx < samples.Length; smpIdx++)
+                    byte[] imbe = new byte[IMBE_BUF_LEN];
+                    switch (n)
                     {
-                        pcm[pcmIdx + 0] = (byte)(samples[smpIdx] & 0xFF);
-                        pcm[pcmIdx + 1] = (byte)((samples[smpIdx] >> 8) & 0xFF);
-                        pcmIdx += 2;
+                        case 0:
+                            Buffer.BlockCopy(ldu, 10, imbe, 0, IMBE_BUF_LEN);
+                            break;
+                        case 1:
+                            Buffer.BlockCopy(ldu, 26, imbe, 0, IMBE_BUF_LEN);
+                            break;
+                        case 2:
+                            Buffer.BlockCopy(ldu, 55, imbe, 0, IMBE_BUF_LEN);
+                            break;
+                        case 3:
+                            Buffer.BlockCopy(ldu, 80, imbe, 0, IMBE_BUF_LEN);
+                            break;
+                        case 4:
+                            Buffer.BlockCopy(ldu, 105, imbe, 0, IMBE_BUF_LEN);
+                            break;
+                        case 5:
+                            Buffer.BlockCopy(ldu, 130, imbe, 0, IMBE_BUF_LEN);
+                            break;
+                        case 6:
+                            Buffer.BlockCopy(ldu, 155, imbe, 0, IMBE_BUF_LEN);
+                            break;
+                        case 7:
+                            Buffer.BlockCopy(ldu, 180, imbe, 0, IMBE_BUF_LEN);
+                            break;
+                        case 8:
+                            Buffer.BlockCopy(ldu, 204, imbe, 0, IMBE_BUF_LEN);
+                            break;
                     }
+                    short[] samples = null;
+                    int errs = p25Decoder.decode(imbe, out samples);
+                    if (samples != null)
+                    {
+                        Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} VC{n} ERRS {errs} [STREAM ID {e.StreamId}]");
+                        // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
+                        // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
 
-                    // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
-                    waveProvider.AddSamples(pcm, 0, pcm.Length);
+                        int pcmIdx = 0;
+                        byte[] pcm = new byte[samples.Length * 2];
+
+                        for (int smpIdx = 0; smpIdx < samples.Length; smpIdx++)
+                        {
+                            pcm[pcmIdx + 0] = (byte)(samples[smpIdx] & 0xFF);
+                            pcm[pcmIdx + 1] = (byte)((samples[smpIdx] >> 8) & 0xFF);
+                            pcmIdx += 2;
+                        }
+
+                        // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
+
+                        if (Program.Configuration.LocalAudio)
+                        {
+                            waveProvider.AddSamples(pcm, 0, pcm.Length);
+                        }
+
+                        if (Program.Configuration.UdpAudio)
+                        {
+                            byte[] audioData = new byte[samples.Length * 2 + 4];
+                            Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length - 4);
+                            audioData[audioData.Length - 4] = (byte)((e.SrcId >> 8) & 0xFF);
+                            audioData[audioData.Length - 3] = (byte)(e.SrcId & 0xFF);
+                            audioData[audioData.Length - 2] = (byte)((e.DstId >> 8) & 0xFF);
+                            audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
+
+                            IPAddress destinationIP = IPAddress.Parse(Program.Configuration.UdpSendAddress);
+                            udpClient.Send(audioData, audioData.Length, new IPEndPoint(destinationIP, Program.Configuration.UdpSendPort));
+                        }
+                    }
                 }
             }
-        }
+            catch (Exception ex)
+            {
+                Log.Logger.Error($"Exception: {ex.Message}");
+            }
+            finally
+            {
+                udpClient.Dispose();
+            }
+
+    }
 
         /// <summary>
         /// Event handler used to process incoming P25 data.
