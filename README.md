@@ -1,6 +1,6 @@
 # Digital Voice Modem FNE Audio Bridge
 
-The Digital Voice Modem FNE Audio Bridge is a helper application designed to allow Rx and Tx of digital audio from/to PCM.
+The Digital Voice Modem FNE Audio Bridge is a helper application designed to allow Rx and Tx of digital audio from/to PCM audio devices or UDP audio streams.
 
 **NOTE**: This project relies on C++/CLI for interop with the vocoder library, as such it will not function or compile on a Linux/Unix system and requires Windows to function.
 
