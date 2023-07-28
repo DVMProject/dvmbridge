@@ -22,9 +22,9 @@
 
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Net.Sockets;
 using System.Net;
+using System.Net.Sockets;
+using System.Threading.Tasks;
 
 using Serilog;
 
@@ -169,6 +169,8 @@ namespace dvmbridge
 
         private uint srcIdOverride = 0;
 
+        private UdpClient udpClient;
+
         /*
         ** Properties
         */
@@ -283,6 +285,8 @@ namespace dvmbridge
                         break;
                 }
             };
+
+            this.udpClient = new UdpClient();
 
             this.dropAudio = new Stopwatch();
             this.audioDetect = false;
@@ -513,7 +517,11 @@ namespace dvmbridge
         /// </summary>
         public void Stop()
         {
+            if (udpClient != null)
+                udpClient.Dispose();
+            
             ShutdownAudio();
+            
             if (fne.IsStarted)
                 fne.Stop();
         }

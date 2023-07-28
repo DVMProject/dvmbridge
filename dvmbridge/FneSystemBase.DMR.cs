@@ -22,6 +22,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 
 using Serilog;
@@ -333,33 +335,54 @@ namespace dvmbridge
         /// <param name="e"></param>
         private void DMRDecodeAudioFrame(byte[] ambe, DMRDataReceivedEvent e)
         {
-            // Log.Logger.Debug($"FULL AMBE {FneUtils.HexDump(ambe)}");
-            for (int n = 0; n < AMBE_PER_SLOT; n++)
+            try
             {
-                byte[] ambePartial = new byte[AMBE_BUF_LEN];
-                for (int i = 0; i < AMBE_BUF_LEN; i++)
-                    ambePartial[i] = ambe[i + (n * 9)];
-
-                short[] samples = null;
-                int errs = dmrDecoder.decode(ambePartial, out samples);
-                if (samples != null)
+                // Log.Logger.Debug($"FULL AMBE {FneUtils.HexDump(ambe)}");
+                for (int n = 0; n < AMBE_PER_SLOT; n++)
                 {
-                    Log.Logger.Information($"({SystemName}) DMRD: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} TS {e.Slot + 1} VC{e.n}.{n} ERRS {errs} [STREAM ID {e.StreamId}]");
-                    // Log.Logger.Debug($"PARTIAL AMBE {FneUtils.HexDump(ambePartial)}");
-                    // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
+                    byte[] ambePartial = new byte[AMBE_BUF_LEN];
+                    for (int i = 0; i < AMBE_BUF_LEN; i++)
+                        ambePartial[i] = ambe[i + (n * 9)];
 
-                    int pcmIdx = 0;
-                    byte[] pcm = new byte[samples.Length * 2];
-                    for (int smpIdx = 0; smpIdx < samples.Length; smpIdx++)
+                    short[] samples = null;
+                    int errs = dmrDecoder.decode(ambePartial, out samples);
+                    if (samples != null)
                     {
-                        pcm[pcmIdx + 0] = (byte)(samples[smpIdx] & 0xFF);
-                        pcm[pcmIdx + 1] = (byte)((samples[smpIdx] >> 8) & 0xFF);
-                        pcmIdx += 2;
-                    }
+                        Log.Logger.Information($"({SystemName}) DMRD: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} TS {e.Slot + 1} VC{e.n}.{n} ERRS {errs} [STREAM ID {e.StreamId}]");
+                        // Log.Logger.Debug($"PARTIAL AMBE {FneUtils.HexDump(ambePartial)}");
+                        // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
 
-                    // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
-                    waveProvider.AddSamples(pcm, 0, pcm.Length);
+                        int pcmIdx = 0;
+                        byte[] pcm = new byte[samples.Length * 2];
+                        for (int smpIdx = 0; smpIdx < samples.Length; smpIdx++)
+                        {
+                            pcm[pcmIdx + 0] = (byte)(samples[smpIdx] & 0xFF);
+                            pcm[pcmIdx + 1] = (byte)((samples[smpIdx] >> 8) & 0xFF);
+                            pcmIdx += 2;
+                        }
+
+                        // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
+                        if (Program.Configuration.LocalAudio)
+                            waveProvider.AddSamples(pcm, 0, pcm.Length);
+
+                        if (Program.Configuration.UdpAudio)
+                        {
+                            byte[] audioData = new byte[samples.Length * 2 + 4];
+                            Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length - 4);
+                            audioData[audioData.Length - 4] = (byte)((e.SrcId >> 8) & 0xFF);
+                            audioData[audioData.Length - 3] = (byte)(e.SrcId & 0xFF);
+                            audioData[audioData.Length - 2] = (byte)((e.DstId >> 8) & 0xFF);
+                            audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
+
+                            IPAddress destinationIP = IPAddress.Parse(Program.Configuration.UdpSendAddress);
+                            udpClient.Send(audioData, audioData.Length, new IPEndPoint(destinationIP, Program.Configuration.UdpSendPort));
+                        }
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Error($"Audio Decode Exception: {ex.Message}");
             }
         }
 

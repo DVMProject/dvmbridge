@@ -22,9 +22,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Net.Sockets;
 using System.Net;
+using System.Net.Sockets;
+using System.Threading.Tasks;
 
 using Serilog;
 
@@ -129,7 +129,6 @@ namespace dvmbridge
             byte[] payload = new byte[200];
             CreateP25MessageHdr((byte)P25DUID.TDU, ref payload);
             payload[23U] = P25_MSG_HDR_SIZE;
-            //NET_FUNC_GRANT
 
             // if this TDU is demanding a grant, set the grant demand control bit
             if (grantDemand)
@@ -148,7 +147,7 @@ namespace dvmbridge
         /// <param name="offset"></param>
         /// <param name="imbe"></param>
         /// <param name="frameType"></param>
-        private void encodeLDU1(ref byte[] data, int offset, byte[] imbe, byte frameType)
+        private void EncodeLDU1(ref byte[] data, int offset, byte[] imbe, byte frameType)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -297,39 +296,39 @@ namespace dvmbridge
             byte[] imbe = new byte[IMBE_BUF_LEN];
 
             Buffer.BlockCopy(netLDU1, 10, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 24, imbe, P25DFSI.P25_DFSI_LDU1_VOICE1);
+            EncodeLDU1(ref data, 24, imbe, P25DFSI.P25_DFSI_LDU1_VOICE1);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE1_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 26, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 46, imbe, P25DFSI.P25_DFSI_LDU1_VOICE2);
+            EncodeLDU1(ref data, 46, imbe, P25DFSI.P25_DFSI_LDU1_VOICE2);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE2_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 55, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 60, imbe, P25DFSI.P25_DFSI_LDU1_VOICE3);
+            EncodeLDU1(ref data, 60, imbe, P25DFSI.P25_DFSI_LDU1_VOICE3);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE3_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 80, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 77, imbe, P25DFSI.P25_DFSI_LDU1_VOICE4);
+            EncodeLDU1(ref data, 77, imbe, P25DFSI.P25_DFSI_LDU1_VOICE4);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE4_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 105, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 94, imbe, P25DFSI.P25_DFSI_LDU1_VOICE5);
+            EncodeLDU1(ref data, 94, imbe, P25DFSI.P25_DFSI_LDU1_VOICE5);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE5_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 130, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 111, imbe, P25DFSI.P25_DFSI_LDU1_VOICE6);
+            EncodeLDU1(ref data, 111, imbe, P25DFSI.P25_DFSI_LDU1_VOICE6);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE6_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 155, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 128, imbe, P25DFSI.P25_DFSI_LDU1_VOICE7);
+            EncodeLDU1(ref data, 128, imbe, P25DFSI.P25_DFSI_LDU1_VOICE7);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE7_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 180, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 145, imbe, P25DFSI.P25_DFSI_LDU1_VOICE8);
+            EncodeLDU1(ref data, 145, imbe, P25DFSI.P25_DFSI_LDU1_VOICE8);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE8_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 204, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU1(ref data, 162, imbe, P25DFSI.P25_DFSI_LDU1_VOICE9);
+            EncodeLDU1(ref data, 162, imbe, P25DFSI.P25_DFSI_LDU1_VOICE9);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE9_FRAME_LENGTH_BYTES;
 
             data[23U] = (byte)count;
@@ -342,7 +341,7 @@ namespace dvmbridge
         /// <param name="offset"></param>
         /// <param name="imbe"></param>
         /// <param name="frameType"></param>
-        private void encodeLDU2(ref byte[] data, int offset, byte[] imbe, byte frameType)
+        private void EncodeLDU2(ref byte[] data, int offset, byte[] imbe, byte frameType)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -488,39 +487,39 @@ namespace dvmbridge
             byte[] imbe = new byte[IMBE_BUF_LEN];
 
             Buffer.BlockCopy(netLDU2, 10, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 24, imbe, P25DFSI.P25_DFSI_LDU2_VOICE10);
+            EncodeLDU2(ref data, 24, imbe, P25DFSI.P25_DFSI_LDU2_VOICE10);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE10_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU2, 26, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 46, imbe, P25DFSI.P25_DFSI_LDU2_VOICE11);
+            EncodeLDU2(ref data, 46, imbe, P25DFSI.P25_DFSI_LDU2_VOICE11);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE11_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU2, 55, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 60, imbe, P25DFSI.P25_DFSI_LDU2_VOICE12);
+            EncodeLDU2(ref data, 60, imbe, P25DFSI.P25_DFSI_LDU2_VOICE12);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE12_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU2, 80, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 77, imbe, P25DFSI.P25_DFSI_LDU2_VOICE13);
+            EncodeLDU2(ref data, 77, imbe, P25DFSI.P25_DFSI_LDU2_VOICE13);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE13_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU2, 105, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 94, imbe, P25DFSI.P25_DFSI_LDU2_VOICE14);
+            EncodeLDU2(ref data, 94, imbe, P25DFSI.P25_DFSI_LDU2_VOICE14);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE14_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU2, 130, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 111, imbe, P25DFSI.P25_DFSI_LDU2_VOICE15);
+            EncodeLDU2(ref data, 111, imbe, P25DFSI.P25_DFSI_LDU2_VOICE15);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE15_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU2, 155, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 128, imbe, P25DFSI.P25_DFSI_LDU2_VOICE16);
+            EncodeLDU2(ref data, 128, imbe, P25DFSI.P25_DFSI_LDU2_VOICE16);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE16_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU2, 180, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 145, imbe, P25DFSI.P25_DFSI_LDU2_VOICE17);
+            EncodeLDU2(ref data, 145, imbe, P25DFSI.P25_DFSI_LDU2_VOICE17);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE17_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU2, 204, imbe, 0, IMBE_BUF_LEN);
-            encodeLDU2(ref data, 162, imbe, P25DFSI.P25_DFSI_LDU2_VOICE18);
+            EncodeLDU2(ref data, 162, imbe, P25DFSI.P25_DFSI_LDU2_VOICE18);
             count += (int)P25DFSI.P25_DFSI_LDU2_VOICE18_FRAME_LENGTH_BYTES;
 
             data[23U] = (byte)count;
@@ -693,7 +692,6 @@ namespace dvmbridge
         /// <param name="e"></param>
         private void P25DecodeAudioFrame(byte[] ldu, P25DataReceivedEvent e)
         {
-            UdpClient udpClient = new UdpClient();
             try
             {
                 // 
@@ -752,9 +750,7 @@ namespace dvmbridge
                         // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
 
                         if (Program.Configuration.LocalAudio)
-                        {
                             waveProvider.AddSamples(pcm, 0, pcm.Length);
-                        }
 
                         if (Program.Configuration.UdpAudio)
                         {
@@ -773,14 +769,9 @@ namespace dvmbridge
             }
             catch (Exception ex)
             {
-                Log.Logger.Error($"Exception: {ex.Message}");
+                Log.Logger.Error($"Audio Decode Exception: {ex.Message}");
             }
-            finally
-            {
-                udpClient.Dispose();
-            }
-
-    }
+        }
 
         /// <summary>
         /// Event handler used to process incoming P25 data.

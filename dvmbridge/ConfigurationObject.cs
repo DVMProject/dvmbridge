@@ -125,6 +125,33 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
+        public bool LocalAudio;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool UdpAudio;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int UdpSendPort;
+        /// <summary>
+        /// 
+        /// </summary>
+        public string UdpSendAddress;
+        /// <summary>
+        /// 
+        /// </summary>
+        public int UdpRecievePort;
+        /// <summary>
+        /// 
+        /// </summary>
+        public string UdpReceiveAddress;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public string Name = "BRIDGE";
         /// <summary>
         /// 
@@ -162,39 +189,6 @@ namespace dvmbridge
         /// 
         /// </summary>
         public int Slot = 1;
-                
-        /// <summary>
-        /// 
-        /// </summary>
-        public int UdpSendPort;
-        /// <summary>
-        /// 
-        /// </summary>
-        public string UdpSendAddress;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public int UdpRecievePort;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public string UdpReceiveAddress;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public bool LocalAudio;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public bool UdpAudio;
-
-        /// <summary>
-        /// 
-        /// </summary>
 
         /*
         ** Methods
