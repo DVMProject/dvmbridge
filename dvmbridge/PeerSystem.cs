@@ -101,6 +101,10 @@ namespace dvmbridge
             Log.Logger.Information($"    Preamble Length: {Program.Configuration.PreambleLength} ms");
             string grantDemandEnabled = (Program.Configuration.GrantDemand) ? "yes" : "no";
             Log.Logger.Information($"    Grant Demand: {grantDemandEnabled}");
+            string localAudioEnabled = (Program.Configuration.LocalAudio) ? "yes" : "no";
+            Log.Logger.Information($"    Local Audio: {localAudioEnabled}");
+            string udpAudioEnabled = (Program.Configuration.UdpAudio) ? "yes" : "no";
+            Log.Logger.Information($"    UDP Audio: {udpAudioEnabled}");
             Log.Logger.Information($"    Source Radio ID: {Program.Configuration.SourceId}");
             string overrideSourceIdFromMDCEnabled = (Program.Configuration.OverrideSourceIdFromMDC) ? "yes" : "no";
             Log.Logger.Information($"    Override Source Radio ID from MDC: {overrideSourceIdFromMDCEnabled}");
