@@ -364,10 +364,14 @@ namespace dvmbridge
             {
                 if (Program.Configuration.OverrideSourceIdFromMDC)
                 {
-                    // do some nasty-nasty to convert MDC hex to integer
-                    string txtSrcId = first.Target.ToString("X4");
-                    srcIdOverride = Convert.ToUInt32(txtSrcId);
-                    Log.Logger.Information($"({SystemName}) Local Traffic *MDC DETECT     * PEER {fne.PeerId} SRC_ID {srcIdOverride}");
+                    try
+                    {
+                        // do some nasty-nasty to convert MDC hex to integer
+                        string txtSrcId = first.Target.ToString("X4");
+                        srcIdOverride = Convert.ToUInt32(txtSrcId);
+                        Log.Logger.Information($"({SystemName}) Local Traffic *MDC DETECT     * PEER {fne.PeerId} SRC_ID {srcIdOverride}");
+                    }
+                    catch (Exception) { /* stub */ }
                 }
             }
         }
@@ -396,6 +400,16 @@ namespace dvmbridge
                 {
                     Log.Logger.Information($"({SystemName}) Local Traffic *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
                     txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
+
+                    if (Program.Configuration.GrantDemand)
+                    {
+                        switch (Program.Configuration.TxMode)
+                        {
+                            case TX_MODE_P25:
+                                SendP25TDU(true);
+                                break;
+                        }
+                    }
                 }
                 dropAudio.Reset();
             }
@@ -464,6 +478,25 @@ namespace dvmbridge
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Helper to generate a leader tone.
+        /// </summary>
+        private void GenerateLeaderTone()
+        {
+            SignalGenerator gen = new SignalGenerator(waveFormat.SampleRate, waveFormat.Channels)
+            {
+                Gain = 0.2f,
+                Frequency = Program.Configuration.PreambleTone,
+                Type = SignalGeneratorType.Sin
+            };
+
+            SampleToAudioProvider16 smpTo16 = new SampleToAudioProvider16(gen);
+            int bufLen = SampleTimeConvert.MSToSampleBytes(waveFormat, Program.Configuration.PreambleLength);
+            byte[] preambleBuf = new byte[bufLen];
+            smpTo16.Read(preambleBuf, 0, bufLen);
+            waveProvider.AddSamples(preambleBuf, 0, preambleBuf.Length);
         }
 
         /// <summary>
