@@ -101,6 +101,8 @@ namespace dvmbridge
             data[11U] = 0;                                                                  // System ID
             data[12U] = 0;
 
+            data[14U] = 0;                                                                  // Control Byte
+
             data[15U] = 0;                                                                  // MFId
 
             data[16U] = 0;                                                                  // Network ID
@@ -118,7 +120,8 @@ namespace dvmbridge
         /// <summary>
         /// Helper to send a P25 TDU message.
         /// </summary>
-        private void SendP25TDU()
+        /// <param name="grantDemand"></param>
+        private void SendP25TDU(bool grantDemand = false)
         {
             FnePeer peer = (FnePeer)fne;
             ushort pktSeq = peer.pktSeq(true);
@@ -126,6 +129,10 @@ namespace dvmbridge
             byte[] payload = new byte[200];
             CreateP25MessageHdr((byte)P25DUID.TDU, ref payload);
             payload[23U] = P25_MSG_HDR_SIZE;
+
+            // if this TDU is demanding a grant, set the grant demand control bit
+            if (grantDemand)
+                payload[14U] |= 0x80;
 
             peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
 

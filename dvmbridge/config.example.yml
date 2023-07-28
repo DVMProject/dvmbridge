@@ -35,6 +35,9 @@ preambleTone: 2175
 # Amount of time (ms) to transmit preamble tone.
 preambleLength: 200
 
+# Flag indicating whether a network grant demand packet will be sent before audio.
+grantDemand: false
+
 # Textual Name
 name: BRIDGE
 # Network Peer ID

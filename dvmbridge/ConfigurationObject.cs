@@ -120,6 +120,11 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
+        public bool GrantDemand = false;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public string Name = "BRIDGE";
         /// <summary>
         /// 

@@ -398,6 +398,16 @@ namespace dvmbridge
                 {
                     Log.Logger.Information($"({SystemName}) Local Traffic *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
                     txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
+
+                    if (Program.Configuration.GrantDemand)
+                    {
+                        switch (Program.Configuration.TxMode)
+                        {
+                            case TX_MODE_P25:
+                                SendP25TDU(true);
+                                break;
+                        }
+                    }
                 }
                 dropAudio.Reset();
             }
