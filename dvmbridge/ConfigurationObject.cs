@@ -107,6 +107,24 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
+        public bool PreambleLeaderTone = false;
+        /// <summary>
+        /// 
+        /// </summary>
+        public double PreambleTone = 2175d;
+        /// <summary>
+        /// 
+        /// </summary>
+        public int PreambleLength = 200;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool GrantDemand = false;
+
+        /// <summary>
+        /// 
+        /// </summary>
         public string Name = "BRIDGE";
         /// <summary>
         /// 
@@ -144,7 +162,7 @@ namespace dvmbridge
         /// 
         /// </summary>
         public int Slot = 1;
-
+                
         /// <summary>
         /// 
         /// </summary>
@@ -177,23 +195,6 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public uint RxFrequency;
-        /// <summary>
-        /// 
-        /// </summary>
-        public uint TxFrequency;
-        /// <summary>
-        /// 
-        /// </summary>
-        public double Latitude;
-        /// <summary>
-        /// 
-        /// </summary>
-        public double Longitude;
-        /// <summary>
-        /// 
-        /// </summary>
-        public string Location;
 
         /*
         ** Methods
@@ -210,14 +211,14 @@ namespace dvmbridge
 
             // identity
             details.Identity = peer.Name;
-            details.RxFrequency = peer.RxFrequency;
-            details.TxFrequency = peer.TxFrequency;
+            details.RxFrequency = 0;
+            details.TxFrequency = 0;
 
             // system info
-            details.Latitude = peer.Latitude;
-            details.Longitude = peer.Longitude;
+            details.Latitude = 0.0d;
+            details.Longitude = 0.0d;
             details.Height = 1;
-            details.Location = peer.Location;
+            details.Location = "Digital Network";
 
             // channel data
             details.TxPower = 0;

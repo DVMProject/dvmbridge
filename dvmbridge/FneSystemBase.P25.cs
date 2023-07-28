@@ -98,7 +98,16 @@ namespace dvmbridge
             FneUtils.Write3Bytes(srcId, ref data, 5);                                       // Source Address
             FneUtils.Write3Bytes(dstId, ref data, 8);                                       // Destination Address
 
+            data[11U] = 0;                                                                  // System ID
+            data[12U] = 0;
+
+            data[14U] = 0;                                                                  // Control Byte
+
             data[15U] = 0;                                                                  // MFId
+
+            data[16U] = 0;                                                                  // Network ID
+            data[17U] = 0;
+            data[18U] = 0;
 
             data[20U] = 0;                                                                  // LSD 1
             data[21U] = 0;                                                                  // LSD 2
@@ -111,7 +120,8 @@ namespace dvmbridge
         /// <summary>
         /// Helper to send a P25 TDU message.
         /// </summary>
-        private void SendP25TDU()
+        /// <param name="grantDemand"></param>
+        private void SendP25TDU(bool grantDemand = false)
         {
             FnePeer peer = (FnePeer)fne;
             ushort pktSeq = peer.pktSeq(true);
@@ -120,6 +130,10 @@ namespace dvmbridge
             CreateP25MessageHdr((byte)P25DUID.TDU, ref payload);
             payload[23U] = P25_MSG_HDR_SIZE;
             //NET_FUNC_GRANT
+
+            // if this TDU is demanding a grant, set the grant demand control bit
+            if (grantDemand)
+                payload[14U] |= 0x80;
 
             peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
 
@@ -803,6 +817,8 @@ namespace dvmbridge
                     callInProgress = true;
                     status[P25_FIXED_SLOT].RxStart = pktTime;
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *CALL START     * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} [STREAM ID {e.StreamId}]");
+                    if (Program.Configuration.PreambleLeaderTone)
+                        GenerateLeaderTone();
                 }
 
                 if (((e.DUID == P25DUID.TDU) || (e.DUID == P25DUID.TDULC)) && (status[P25_FIXED_SLOT].RxType != FrameType.TERMINATOR))

@@ -223,6 +223,16 @@ namespace dvmbridge
                 }
             }
 
+            if (!logInputDeviceError)
+            {
+                if (WaveInDevice > WaveIn.DeviceCount)
+                {
+                    Console.WriteLine("error: invalid input audio device specified!");
+                    Usage(options);
+                    Environment.Exit((int)ERRNO.EBADOPTIONS);
+                }
+            }
+
             // determine which audio output device we're using
             if (waveOutDeviceStr == null)
             {
@@ -257,6 +267,13 @@ namespace dvmbridge
             if (WaveOutDevice == -1)
             {
                 Console.WriteLine("error: no output audio device specified!");
+                Usage(options);
+                Environment.Exit((int)ERRNO.EBADOPTIONS);
+            }
+
+            if (WaveOutDevice > WaveOut.DeviceCount)
+            {
+                Console.WriteLine("error: invalid output audio device specified!");
                 Usage(options);
                 Environment.Exit((int)ERRNO.EBADOPTIONS);
             }
@@ -387,6 +404,14 @@ namespace dvmbridge
 
             if (logInputDeviceError)
                 Log.Logger.Error($"No input audio device specified or invalid audio device! Audio input will be disabled! {waveInDeviceStr}");
+            else
+            {
+                WaveInCapabilities waveInDeviceInfo = WaveIn.GetCapabilities(WaveInDevice);
+                Log.Logger.Information($"Wave Input Device {WaveInDevice} - {waveInDeviceInfo.ProductName}");
+            }
+
+            WaveOutCapabilities waveOutDeviceInfo = WaveOut.GetCapabilities(WaveOutDevice);
+            Log.Logger.Information($"Wave Output Device {WaveOutDevice} - {waveOutDeviceInfo.ProductName}");
 
             try
             {

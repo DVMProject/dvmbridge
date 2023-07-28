@@ -24,7 +24,7 @@ using System;
 using NAudio.Wave;
 using NAudio.Utils;
 
-namespace dvmbridge.MDC1200
+namespace dvmbridge
 {
     public delegate void WaveProviderMonoFilterSampleCallback(ref double smp);
 
@@ -113,4 +113,4 @@ namespace dvmbridge.MDC1200
             return sourceSamples * 2;
         }
     } // public class SampleToAudioProvider16 : IWaveProvider
-} // namespace dvmbridge.MDC1200
+} // namespace dvmbridge
