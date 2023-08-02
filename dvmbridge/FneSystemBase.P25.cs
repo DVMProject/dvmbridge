@@ -70,6 +70,7 @@ namespace dvmbridge
         {
             return true;
         }
+
         /// <summary>
         /// Event handler used to pre-process incoming P25 data.
         /// </summary>
@@ -79,6 +80,7 @@ namespace dvmbridge
         {
             return;
         }
+
         /// <summary>
         /// Creates an P25 frame message header.
         /// </summary>
@@ -694,7 +696,6 @@ namespace dvmbridge
         {
             try
             {
-                // 
                 // decode 9 IMBE codewords into PCM samples
                 for (int n = 0; n < 9; n++)
                 {
@@ -729,6 +730,7 @@ namespace dvmbridge
                             Buffer.BlockCopy(ldu, 204, imbe, 0, IMBE_BUF_LEN);
                             break;
                     }
+
                     short[] samples = null;
                     int errs = p25Decoder.decode(imbe, out samples);
                     if (samples != null)
