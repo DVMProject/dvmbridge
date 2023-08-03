@@ -402,8 +402,8 @@ namespace dvmbridge
                 audioDetect = true;
                 if (txStreamId == 0)
                 {
-                    Log.Logger.Information($"({SystemName}) Local Traffic *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
                     txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
+                    Log.Logger.Information($"({SystemName}) Local Traffic *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                     if (Program.Configuration.GrantDemand)
                     {
