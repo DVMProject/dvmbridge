@@ -49,21 +49,6 @@ namespace dvmbridge.FNE.P25
         public const uint P25_DFSI_LDU2_VOICE17_FRAME_LENGTH_BYTES = 17;
         public const uint P25_DFSI_LDU2_VOICE18_FRAME_LENGTH_BYTES = 16;
 
-        public const byte P25_DFSI_STATUS_NO_ERROR = 0x00;   //
-        public const byte P25_DFSI_STATUS_ERASE = 0x02;      //
-
-        public const byte P25_DFSI_RT_ENABLED = 0x02;        //
-        public const byte P25_DFSI_RT_DISABLED = 0x04;       //
-
-        public const byte P25_DFSI_START_FLAG = 0x0C;        //
-        public const byte P25_DFSI_STOP_FLAG = 0x25;         //
-
-        public const byte P25_DFSI_TYPE_DATA_PAYLOAD = 0x06; //
-        public const byte P25_DFSI_TYPE_VOICE = 0x0B;        //
-
-        public const byte P25_DFSI_DEF_ICW_SOURCE = 0x00;    // Infrastructure Source - Default Source
-        public const byte P25_DFSI_DEF_SOURCE = 0x00;        //
-
         public const byte P25_DFSI_LDU1_VOICE1 = 0x62;       // IMBE LDU1 - Voice 1
         public const byte P25_DFSI_LDU1_VOICE2 = 0x63;       // IMBE LDU1 - Voice 2
         public const byte P25_DFSI_LDU1_VOICE3 = 0x64;       // IMBE LDU1 - Voice 3 + Link Control
@@ -125,6 +110,12 @@ namespace dvmbridge.FNE.P25
     /// </summary>
     public class P25Defines
     {
+        public const byte P25_MFG_STANDARD = 0x00;
+
+        public const byte P25_ALGO_UNENCRYPT = 0x80;
+
+        public const byte P25_MI_LENGTH = 9;
+
         // LDUx/TDULC Link Control Opcode(s)
         public const byte LC_GROUP = 0x00;                   // GRP VCH USER - Group Voice Channel User
         public const byte LC_GROUP_UPDT = 0x02;              // GRP VCH UPDT - Group Voice Channel Update

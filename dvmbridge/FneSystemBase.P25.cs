@@ -204,7 +204,6 @@ namespace dvmbridge
                 case P25DFSI.P25_DFSI_LDU1_VOICE2:
                     {
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 1, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[12U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU1_VOICE3:
@@ -213,7 +212,6 @@ namespace dvmbridge
                         dfsiFrame[2U] = 0;                                                  // MFId
                         dfsiFrame[3U] = 0;                                                  // Service Options
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU1_VOICE4:
@@ -222,7 +220,6 @@ namespace dvmbridge
                         dfsiFrame[2U] = (byte)((dstId >> 8) & 0xFFU);
                         dfsiFrame[3U] = (byte)((dstId >> 0) & 0xFFU);
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU1_VOICE5:
@@ -231,7 +228,6 @@ namespace dvmbridge
                         dfsiFrame[2U] = (byte)((srcId >> 8) & 0xFFU);
                         dfsiFrame[3U] = (byte)((srcId >> 0) & 0xFFU);
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU1_VOICE6:
@@ -240,7 +236,6 @@ namespace dvmbridge
                         dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU1_VOICE7:
@@ -249,7 +244,6 @@ namespace dvmbridge
                         dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU1_VOICE8:
@@ -258,7 +252,6 @@ namespace dvmbridge
                         dfsiFrame[2U] = 0;                                                  // RS (24,12,13)
                         dfsiFrame[3U] = 0;                                                  // RS (24,12,13)
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU1_VOICE9:
@@ -272,14 +265,8 @@ namespace dvmbridge
                 case P25DFSI.P25_DFSI_LDU1_VOICE1:
                 default:
                     {
-                        dfsiFrame[1U] = 0x02;                                               //
-                        dfsiFrame[2U] = P25DFSI.P25_DFSI_RT_ENABLED;                        // RT/RT Mode Flag
-                        dfsiFrame[3U] = P25DFSI.P25_DFSI_START_FLAG;                        // Start/Stop Flag
-                        dfsiFrame[4U] = P25DFSI.P25_DFSI_TYPE_VOICE;                        // Type Flag
-                        dfsiFrame[5U] = P25DFSI.P25_DFSI_DEF_ICW_SOURCE;                    // ICW Flag
                         dfsiFrame[6U] = 0;                                                  // RSSI
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 10, IMBE_BUF_LEN);             // IMBE
-                        dfsiFrame[21U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
                     }
                     break;
             }
@@ -395,7 +382,6 @@ namespace dvmbridge
                 case P25DFSI.P25_DFSI_LDU2_VOICE11:
                     {
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 1, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[12U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU2_VOICE12:
@@ -404,7 +390,6 @@ namespace dvmbridge
                         dfsiFrame[2U] = 0;
                         dfsiFrame[3U] = 0;
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU2_VOICE13:
@@ -413,7 +398,6 @@ namespace dvmbridge
                         dfsiFrame[2U] = 0;
                         dfsiFrame[3U] = 0;
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU2_VOICE14:
@@ -422,16 +406,14 @@ namespace dvmbridge
                         dfsiFrame[2U] = 0;
                         dfsiFrame[3U] = 0;
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU2_VOICE15:
                     {
-                        dfsiFrame[1U] = 0x80;                                               // Algorithm ID
+                        dfsiFrame[1U] = P25Defines.P25_ALGO_UNENCRYPT;                      // Algorithm ID
                         dfsiFrame[2U] = 0;                                                  // Key ID
                         dfsiFrame[3U] = 0;
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU2_VOICE16:
@@ -440,7 +422,6 @@ namespace dvmbridge
                         // part of the RS(24, 16, 9) of the VOICE12, 13, 14, 15
                         // control bytes
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU2_VOICE17:
@@ -449,7 +430,6 @@ namespace dvmbridge
                         // part of the RS(24, 16, 9) of the VOICE12, 13, 14, 15
                         // control bytes
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 5, IMBE_BUF_LEN);              // IMBE
-                        dfsiFrame[16U] = P25DFSI.P25_DFSI_STATUS_ERASE;                     // Status
                     }
                     break;
                 case P25DFSI.P25_DFSI_LDU2_VOICE18:
@@ -463,14 +443,8 @@ namespace dvmbridge
                 case P25DFSI.P25_DFSI_LDU2_VOICE10:
                 default:
                     {
-                        dfsiFrame[1U] = 0x02;                                               //
-                        dfsiFrame[2U] = P25DFSI.P25_DFSI_RT_ENABLED;                        // RT/RT Mode Flag
-                        dfsiFrame[3U] = P25DFSI.P25_DFSI_START_FLAG;                        // Start/Stop Flag
-                        dfsiFrame[4U] = P25DFSI.P25_DFSI_TYPE_VOICE;                        // Type Flag
-                        dfsiFrame[5U] = P25DFSI.P25_DFSI_DEF_ICW_SOURCE;                    // ICW Flag
                         dfsiFrame[6U] = 0;                                                  // RSSI
                         Buffer.BlockCopy(imbe, 0, dfsiFrame, 10, IMBE_BUF_LEN);             // IMBE
-                        dfsiFrame[21U] = P25DFSI.P25_DFSI_DEF_SOURCE;                       // Source
                     }
                     break;
             }
