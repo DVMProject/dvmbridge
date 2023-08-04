@@ -49,6 +49,8 @@ namespace dvmbridge.FNE
     /// </summary>
     public class FnePeer : FneBase
     {
+        private const int MAX_MISSED_PEER_PINGS = 5;
+
         private UdpReceiver client = null;
 
         private bool abortListening = false;
@@ -652,12 +654,25 @@ namespace dvmbridge.FNE
                     // if we are connected, sent a ping to the master and increment the counter
                     if (info.Connection && info.State == ConnectionState.RUNNING)
                     {
-                        // send message to master
-                        byte[] res = new byte[1];
-                        SendMaster(CreateOpcode(Constants.NET_FUNC_PING), res);
+                        if (PingsSent > (PingsAcked + MAX_MISSED_PEER_PINGS))
+                        {
+                            Log(LogLevel.WARNING, $"({systemName} Peer connection lost to {masterEndpoint}; reconnecting...");
 
-                        PingsSent++;
-                        Log(LogLevel.DEBUG, $"({systemName}) RPTPING sent to MASTER {masterEndpoint}; pings since connected {PingsSent}");
+                            PingsSent = 0;
+                            PingsAcked = 0;
+                            info.State = ConnectionState.WAITING_LOGIN;
+
+                            client.Connect(masterEndpoint);
+                        }
+                        else
+                        {
+                            // send message to master
+                            byte[] res = new byte[1];
+                            SendMaster(CreateOpcode(Constants.NET_FUNC_PING), res);
+
+                            PingsSent++;
+                            Log(LogLevel.DEBUG, $"({systemName}) RPTPING sent to MASTER {masterEndpoint}; pings since connected {PingsSent}");
+                        }
                     }
                 }
                 catch (InvalidOperationException)
