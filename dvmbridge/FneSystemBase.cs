@@ -28,8 +28,8 @@ using System.Threading.Tasks;
 
 using Serilog;
 
-using dvmbridge.FNE;
-using dvmbridge.FNE.DMR;
+using fnecore;
+using fnecore.DMR;
 using dvmbridge.MDC1200;
 
 using vocoder;

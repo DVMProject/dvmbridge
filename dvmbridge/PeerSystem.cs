@@ -27,7 +27,7 @@ using System.Text;
 
 using Serilog;
 
-using dvmbridge.FNE;
+using fnecore;
 
 namespace dvmbridge
 {

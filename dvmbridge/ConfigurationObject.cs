@@ -23,7 +23,7 @@
 using System;
 using System.Collections.Generic;
 
-using dvmbridge.FNE;
+using fnecore;
 
 namespace dvmbridge
 {

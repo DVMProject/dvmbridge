@@ -1,0 +1,3 @@
+[submodule "fnecore"]
+	path = fnecore
+	url = git@github.com:DVMProject/fnecore.git

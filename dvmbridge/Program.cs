@@ -35,8 +35,8 @@ using Serilog.Extensions.Logging;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-using FneLogLevel = dvmbridge.FNE.LogLevel;
-using dvmbridge.FNE.Utility;
+using FneLogLevel = fnecore.LogLevel;
+using fnecore.Utility;
 
 using NAudio.Wave;
 
