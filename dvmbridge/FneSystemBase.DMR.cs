@@ -324,7 +324,7 @@ namespace dvmbridge
             byte[] ambe = null;
 #if WIN32
             if (extHalfRateVocoder != null)
-                extHalfRateVocoder.encode(samples, out ambe);
+                extHalfRateVocoder.encode(samples, out ambe, true);
             else
                 dmrEncoder.encode(samples, out ambe);
 #else

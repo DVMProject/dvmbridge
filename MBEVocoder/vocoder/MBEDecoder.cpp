@@ -108,6 +108,73 @@ MBEDecoder::~MBEDecoder()
 }
 
 /// <summary>
+/// Decodes the given MBE codewords to deinterleaved MBE bits using the decoder mode.
+/// </summary>
+/// <param name="codeword"></param>
+/// <param name="samples"></param>
+/// <returns></returns>
+int32_t MBEDecoder::decodeBits(uint8_t* codeword, char* mbeBits)
+{
+    int32_t errs = 0;
+    float samples[160U];
+    ::memset(samples, 0x00U, 160U);
+
+    switch (m_mbeMode)
+    {
+    case DECODE_DMR_AMBE:
+    {
+        char ambe_d[49U];
+        char ambe_fr[4][24];
+        ::memset(ambe_d, 0x00U, 49U);
+        ::memset(ambe_fr, 0x00U, 96U);
+
+        const int* w, *x, *y, *z;
+
+        w = rW;
+        x = rX;
+        y = rY;
+        z = rZ;
+
+        for (int i = 0; i < 9; ++i) {
+            for (int j = 0; j < 8; j += 2) {
+                ambe_fr[*y][*z] = (1 & (codeword[i] >> (7 - (j + 1))));
+                ambe_fr[*w][*x] = (1 & (codeword[i] >> (7 - j)));
+                w++;
+                x++;
+                y++;
+                z++;
+            }
+        }
+
+        errs = mbe_eccAmbe3600x2450C0(ambe_fr);
+        mbe_demodulateAmbe3600x2450Data(ambe_fr);
+
+        errs += mbe_eccAmbe3600x2450Data(ambe_fr, ambe_d);
+
+        ::memcpy(mbeBits, ambe_d, 49U);
+    }
+    break;
+
+    case DECODE_88BIT_IMBE:
+    {
+        char imbe_d[88U];
+        ::memset(imbe_d, 0x00U, 88U);
+
+        for (int i = 0; i < 11; ++i) {
+            for (int j = 0; j < 8; j++) {
+                imbe_d[j + (8 * i)] = (1 & (codeword[i] >> (7 - j)));
+            }
+        }
+
+        ::memcpy(mbeBits, imbe_d, 88U);
+    }
+    break;
+    }
+
+    return errs;
+}
+
+/// <summary>
 /// Decodes the given MBE codewords to PCM samples using the decoder mode.
 /// </summary>
 /// <param name="codeword"></param>
@@ -125,7 +192,7 @@ int32_t MBEDecoder::decodeF(uint8_t* codeword, float samples[])
         ::memset(ambe_d, 0x00U, 49U);
         ::memset(ambe_fr, 0x00U, 96U);
 
-        const int* w, * x, * y, * z;
+        const int* w, *x, *y, *z;
 
         w = rW;
         x = rX;

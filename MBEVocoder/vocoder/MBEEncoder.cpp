@@ -584,6 +584,58 @@ MBEEncoder::MBEEncoder(MBE_ENCODER_MODE mode) :
 }
 
 /// <summary>
+/// Encodes the given MBE bits to deinterleaved MBE bits using the decoder mode.
+/// </summary>
+/// <param name="bits"></param>
+/// <param name="codeword"></param>
+/// <returns></returns>
+void MBEEncoder::encodeBits(uint8_t bits[], uint8_t codeword[])
+{
+    int32_t errs = 0;
+    float samples[160U];
+    ::memset(samples, 0x00U, 160U);
+
+    switch (m_mbeMode)
+    {
+    case ENCODE_DMR_AMBE:
+    {
+        // build 49-bit AMBE bytes
+        uint8_t rawAmbe[9U];
+        ::memset(rawAmbe, 0x00U, 9U);
+
+        for (int i = 0; i < 9; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                rawAmbe[i] |= (bits[(i * 8) + j] << (7 - j));
+            }
+        }
+
+        // build DMR AMBE bytes
+        uint8_t dmrAMBE[9U];
+        ::memset(dmrAMBE, 0x00U, 9U);
+
+        encodeDmrAMBE(rawAmbe, dmrAMBE);
+        ::memcpy(codeword, dmrAMBE, 9U);
+    }
+    break;
+
+    case ENCODE_88BIT_IMBE:
+    {
+        uint8_t rawImbe[11U];
+        ::memset(rawImbe, 0x00U, 11U);
+
+        for (int i = 0; i < 11; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                rawImbe[i] |= (bits[(i * 8) + j] << (7 - j));
+            }
+        }
+    
+        ::memcpy(codeword, rawImbe, 11U);
+    }
+    break;
+    }
+}
+
+/// <summary>
 /// Encodes the given PCM samples using the encoder mode to MBE codewords.
 /// </summary>
 /// <param name="samples"></param>

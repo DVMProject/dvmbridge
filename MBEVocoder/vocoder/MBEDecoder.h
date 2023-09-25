@@ -87,6 +87,9 @@ namespace vocoder
         /// <summary>Finalizes a instance of the MBEDecoder class.</summary>
         ~MBEDecoder();
 
+        /// <summary>Decodes the given MBE codewords to deinterleaved MBE bits using the decoder mode.</summary>
+        int32_t decodeBits(uint8_t* codeword, char* mbeBits);
+
         /// <summary>Decodes the given MBE codewords to PCM samples using the decoder mode.</summary>
         int32_t decodeF(uint8_t* codeword, float samples[]);
         /// <summary>Decodes the given MBE codewords to PCM samples using the decoder mode.</summary>

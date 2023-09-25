@@ -623,7 +623,6 @@ void mbe_processAmbe2450Data(short* aout_buf, int* errs, int* errs2, char* err_s
 /// <param name="uvquality"></param>
 void mbe_processAmbe3600x2450FrameF(float* aout_buf, int* errs, int* errs2, char* err_str, char ambe_fr[4][24], char ambe_d[49], mbe_parms* cur_mp, mbe_parms* prev_mp, mbe_parms* prev_mp_enhanced, int uvquality)
 {
-
     *errs = 0;
     *errs2 = 0;
     *errs = mbe_eccAmbe3600x2450C0(ambe_fr);

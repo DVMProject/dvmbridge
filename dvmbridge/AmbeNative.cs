@@ -21,6 +21,8 @@
 using System;
 using System.Runtime.InteropServices;
 
+using vocoder;
+
 #if WIN32
 namespace dvmbridge
 {
@@ -58,6 +60,8 @@ namespace dvmbridge
 
         private ushort dcmode;
         private ushort ecmode;
+
+        private MBEInterleaver interleaver;
 
         /*
         ** Properties
@@ -106,12 +110,14 @@ namespace dvmbridge
             if (fullRate)
             {
                 this.mode = AmbeMode.FULL_RATE;
+                this.interleaver = new MBEInterleaver(MBEMode.IMBE);
                 this.frameLengthInBits = 88;
                 this.frameLengthInBytes = 11;
             }
             else
             {
                 this.mode = AmbeMode.HALF_RATE;
+                this.interleaver = new MBEInterleaver(MBEMode.DMRAMBE);
                 this.frameLengthInBits = 49;
                 this.frameLengthInBytes = 7;
             }
@@ -137,6 +143,7 @@ namespace dvmbridge
         /// <summary>
         /// Helper to unpack the codeword bytes into codeword bits for use with the AMBE decoder.
         /// </summary>
+        /// <remarks><see cref="short"/> output bits array.</remarks>
         /// <param name="codewordBits">Codeword bits.</param>
         /// <param name="codeword">Codeword bytes.</param>
         /// <param name="lengthBytes">Length of codeword in bytes.</param>
@@ -164,6 +171,36 @@ namespace dvmbridge
         }
 
         /// <summary>
+        /// Helper to unpack the codeword bytes into codeword bits for use with the AMBE decoder.
+        /// </summary>
+        /// <remarks><see cref="byte"/> output bits array.</remarks>
+        /// <param name="codewordBits">Codeword bits.</param>
+        /// <param name="codeword">Codeword bytes.</param>
+        /// <param name="lengthBytes">Length of codeword in bytes.</param>
+        /// <param name="lengthBits">Length of codeword in bits.</param>
+        private void unpackBytesToBits(out byte[] codewordBits, byte[] codeword, int lengthBytes, int lengthBits)
+        {
+            codewordBits = new byte[this.frameLengthInBits * 2];
+
+            int processed = 0, bitPtr = 0, bytePtr = 0;
+            for (int i = 0; i < lengthBytes; i++)
+            {
+                for (int j = 7; -1 < j; j--)
+                {
+                    if (processed < lengthBits)
+                    {
+                        codewordBits[bitPtr] = (byte)((codeword[bytePtr] >> ((byte)j & 0x1F)) & 1);
+                        bitPtr++;
+                    }
+
+                    processed++;
+                }
+
+                bytePtr++;
+            }
+        }
+
+        /// <summary>
         /// Decodes the given MBE codewords to PCM samples using the decoder mode.
         /// </summary>
         /// <param name="codeword"></param>
@@ -174,6 +211,24 @@ namespace dvmbridge
 
             if (codeword == null)
                 throw new NullReferenceException("codeword");
+
+            // is this a DMR codeword?
+            if (codeword.Length > frameLengthInBytes && mode == AmbeMode.HALF_RATE &&
+                codeword.Length == 9)
+            {
+                // use the managed vocoder to retrieve the un-ECC'ed and uninterleaved AMBE bits
+                byte[] bits = new byte[49];
+                interleaver.decode(codeword, out bits);
+
+                // repack bits into 7-byte array
+                packBitsToBytes(bits, out codeword, frameLengthInBytes, frameLengthInBits);
+            }
+
+            if (codeword.Length > frameLengthInBytes)
+                throw new ArgumentOutOfRangeException($"Codeword length is > {frameLengthInBytes}");
+
+            if (codeword.Length < frameLengthInBytes)
+                throw new ArgumentOutOfRangeException($"Codeword length is < {frameLengthInBytes}");
 
             // unpack codeword from bytes to bits for use with external library
             short[] codewordBits = null;
@@ -210,7 +265,7 @@ namespace dvmbridge
             for (int i = 0; i < MBE_SAMPLES_LENGTH / 2; i++)
                 samples[i + (MBE_SAMPLES_LENGTH / 2)] = n1[i];
 
-            return 0;
+            return 0; // this always just returns no errors?
         }
 
         /// <summary>
@@ -245,6 +300,7 @@ namespace dvmbridge
         /// <summary>
         /// Helper to pack the codeword bits into codeword bytes for use with the AMBE encoder.
         /// </summary>
+        /// <remarks><see cref="short"/> input bits array.</remarks>
         /// <param name="codewordBits">Codeword bits.</param>
         /// <param name="codeword">Codeword bytes.</param>
         /// <param name="lengthBytes">Length of codeword in bytes.</param>
@@ -273,11 +329,43 @@ namespace dvmbridge
         }
 
         /// <summary>
+        /// Helper to pack the codeword bits into codeword bytes for use with the AMBE encoder.
+        /// </summary>
+        /// <remarks><see cref="byte"/> input bits array.</remarks>
+        /// <param name="codewordBits">Codeword bits.</param>
+        /// <param name="codeword">Codeword bytes.</param>
+        /// <param name="lengthBytes">Length of codeword in bytes.</param>
+        /// <param name="lengthBits">Length of codeword in bits.</param>
+        private void packBitsToBytes(byte[] codewordBits, out byte[] codeword, int lengthBytes, int lengthBits)
+        {
+            codeword = new byte[lengthBytes];
+
+            int processed = 0, bitPtr = 0, bytePtr = 0;
+            for (int i = 0; i < lengthBytes; i++)
+            {
+                codeword[i] = 0;
+                for (int j = 7; -1 < j; j--)
+                {
+                    if (processed < lengthBits)
+                    {
+                        codeword[bytePtr] = (byte)(codeword[bytePtr] | (byte)((codewordBits[bitPtr] & 1) << ((byte)j & 0x1F)));
+                        bitPtr++;
+                    }
+
+                    processed++;
+                }
+
+                bytePtr++;
+            }
+        }
+
+        /// <summary>
         /// Encodes the given PCM samples using the encoder mode to MBE codewords.
         /// </summary>
         /// <param name="samples"></param>
         /// <param name="codeword"></param>
-        public void encode(short[] samples, out byte[] codeword)
+        /// <param name="encodeDMR"></param>
+        public void encode(short[] samples, out byte[] codeword, bool encodeDMR = false)
         {
             codeword = new byte[this.frameLengthInBytes];
 
@@ -322,8 +410,24 @@ namespace dvmbridge
                 }
             }
 
-            // pack codeword from bits to bytes for use with external library
-            packBitsToBytes(codewordBits, out codeword, frameLengthInBytes, frameLengthInBits);
+            // is this to be a DMR codeword?
+            if (mode == AmbeMode.HALF_RATE && encodeDMR)
+            {
+                byte[] bits = new byte[49];
+                for (int i = 0; i < 49; i++)
+                    bits[i] = (byte)codewordBits[i];
+
+                // use the managed vocoder to create the ECC'ed and interleaved AMBE bits
+                interleaver.encode(bits, out codeword);
+
+                // pack codeword from bits to bytes for use with external library
+                packBitsToBytes(codewordBits, out codeword, 9, 72);
+            }
+            else
+            {
+                // pack codeword from bits to bytes for use with external library
+                packBitsToBytes(codewordBits, out codeword, frameLengthInBytes, frameLengthInBits);
+            }
         }
 
         /// <summary>

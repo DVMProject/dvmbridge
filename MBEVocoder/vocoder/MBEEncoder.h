@@ -53,6 +53,9 @@ namespace vocoder
         /// <summary>Initializes a new instance of the MBEEncoder class.</summary>
         MBEEncoder(MBE_ENCODER_MODE mode);
 
+        /// <summary>Encodes the given MBE bits to deinterleaved MBE bits using the encoder mode.</summary>
+        void encodeBits(uint8_t bits[], uint8_t codeword[]);
+
         /// <summary>Encodes the given PCM samples using the encoder mode to MBE codewords.</summary>
         void encode(int16_t samples[], uint8_t codeword[]);
 
