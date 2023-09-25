@@ -125,12 +125,12 @@ namespace dvmbridge
         /// <summary>
         /// 
         /// </summary>
-        public bool LocalAudio;
+        public bool LocalAudio = true;
 
         /// <summary>
         /// 
         /// </summary>
-        public bool UdpAudio;
+        public bool UdpAudio = false;
 
         /// <summary>
         /// 

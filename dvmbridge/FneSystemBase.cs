@@ -22,9 +22,11 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using System.Reflection;
 
 using Serilog;
 
@@ -147,6 +149,11 @@ namespace dvmbridge
         private bool callInProgress = false;
 
         private SlotStatus[] status;
+
+#if WIN32
+        private AmbeVocoder extFullRateVocoder;
+        private AmbeVocoder extHalfRateVocoder;
+#endif
 
         private WaveFormat waveFormat;                  //
         private BufferedWaveProvider waveProvider;      //
@@ -347,7 +354,19 @@ namespace dvmbridge
             p25Decoder.AutoGain = Program.Configuration.RxAutoGain;
             p25Encoder = new MBEEncoderManaged(MBEMode.IMBE);
             p25Encoder.GainAdjust = Program.Configuration.TxAudioGain;
+#if WIN32
+            string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+            UriBuilder uri = new UriBuilder(codeBase);
+            string path = Uri.UnescapeDataString(uri.Path);
 
+            // if the assembly executing directory contains the external AMBE.DLL interface DLL
+            // setup the external vocoder code
+            if (File.Exists(Path.Combine(new string[] { Path.GetDirectoryName(path), "AMBE.DLL" })))
+            {
+                extFullRateVocoder = new AmbeVocoder();
+                extHalfRateVocoder = new AmbeVocoder(false);
+            }
+#endif
             embeddedData = new EmbeddedData();
             ambeBuffer = new byte[27];
 

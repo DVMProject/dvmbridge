@@ -529,7 +529,14 @@ namespace dvmbridge
 
             // encode PCM samples into IMBE codewords
             byte[] imbe = null;
+#if WIN32
+            if (extFullRateVocoder != null)
+                extFullRateVocoder.encode(samples, out imbe);
+            else
+                p25Encoder.encode(samples, out imbe);
+#else
             p25Encoder.encode(samples, out imbe);
+#endif
             // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
 #if ENCODER_LOOPBACK_TEST
             short[] samp2 = null;
@@ -707,12 +714,20 @@ namespace dvmbridge
                     }
 
                     short[] samples = null;
-                    int errs = p25Decoder.decode(imbe, out samples);
+                    int errs = 0;
+#if WIN32
+                    if (extFullRateVocoder != null)
+                        errs = extFullRateVocoder.decode(imbe, out samples);
+                    else
+                        errs = p25Decoder.decode(imbe, out samples);
+#else
+                    errs = p25Decoder.decode(imbe, out samples);
+#endif
                     if (samples != null)
                     {
                         Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} VC{n} ERRS {errs} [STREAM ID {e.StreamId}]");
                         // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
-                        // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
+                         Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
 
                         int pcmIdx = 0;
                         byte[] pcm = new byte[samples.Length * 2];

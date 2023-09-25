@@ -322,7 +322,14 @@ namespace dvmbridge
 
             // encode PCM samples into AMBE codewords
             byte[] ambe = null;
+#if WIN32
+            if (extHalfRateVocoder != null)
+                extHalfRateVocoder.encode(samples, out ambe);
+            else
+                dmrEncoder.encode(samples, out ambe);
+#else
             dmrEncoder.encode(samples, out ambe);
+#endif
             // Log.Logger.Debug($"AMBE {FneUtils.HexDump(ambe)}");
 
             Buffer.BlockCopy(ambe, 0, ambeBuffer, ambeCount * 9, AMBE_BUF_LEN);
@@ -346,7 +353,16 @@ namespace dvmbridge
                         ambePartial[i] = ambe[i + (n * 9)];
 
                     short[] samples = null;
-                    int errs = dmrDecoder.decode(ambePartial, out samples);
+                    int errs = 0;
+#if WIN32
+                    if (extHalfRateVocoder != null)
+                        errs = extHalfRateVocoder.decode(ambePartial, out samples);
+                    else
+                        errs = dmrDecoder.decode(ambePartial, out samples);
+#else
+                    errs = dmrDecoder.decode(ambePartial, out samples);
+#endif
+
                     if (samples != null)
                     {
                         Log.Logger.Information($"({SystemName}) DMRD: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} TS {e.Slot + 1} VC{e.n}.{n} ERRS {errs} [STREAM ID {e.StreamId}]");
