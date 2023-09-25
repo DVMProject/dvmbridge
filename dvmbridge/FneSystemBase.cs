@@ -365,6 +365,7 @@ namespace dvmbridge
             {
                 extFullRateVocoder = new AmbeVocoder();
                 extHalfRateVocoder = new AmbeVocoder(false);
+                Log.Logger.Information($"({SystemName}) Using external USB vocoder.");
             }
 #endif
             embeddedData = new EmbeddedData();
