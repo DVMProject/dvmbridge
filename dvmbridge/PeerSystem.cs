@@ -79,9 +79,12 @@ namespace dvmbridge
             Log.Logger.Information($"    Peer ID: {Program.Configuration.PeerId}");
             Log.Logger.Information($"    Master Addresss: {Program.Configuration.Address}");
             Log.Logger.Information($"    Master Port: {Program.Configuration.Port}");
-            string rxAutoGainEnabled = (Program.Configuration.RxAutoGain) ? "yes" : "no";
-            Log.Logger.Information($"    Rx Automatic Gain: {rxAutoGainEnabled}");
-            Log.Logger.Information($"    Tx Gain (audio to network): {Program.Configuration.TxAudioGain}");
+            Log.Logger.Information($"    PCM Rx Audio Gain: {Program.Configuration.RxAudioGain}");
+            Log.Logger.Information($"    Vocoder Decoder Gain (audio from network): {Program.Configuration.VocoderDecoderAudioGain}");
+            string decoderAutoGainEnabled = (Program.Configuration.VocoderDecoderAutoGain) ? "yes" : "no";
+            Log.Logger.Information($"    Vocoder Decoder Automatic Gain: {decoderAutoGainEnabled}");
+            Log.Logger.Information($"    PCM Tx Audio Gain: {Program.Configuration.TxAudioGain}");
+            Log.Logger.Information($"    Vocoder Encoder Gain (audio to network): {Program.Configuration.VocoderEncoderAudioGain}");
             switch (Program.Configuration.TxMode)
             {
                 case 1:

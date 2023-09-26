@@ -31,6 +31,8 @@ using Serilog;
 using fnecore;
 using fnecore.DMR;
 
+using NAudio.Wave;
+
 using vocoder;
 
 namespace dvmbridge
@@ -310,6 +312,17 @@ namespace dvmbridge
 #endif
             // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
 
+            // pre-process: apply gain to PCM audio frames
+            if (Program.Configuration.TxAudioGain != 1.0f)
+            {
+                BufferedWaveProvider buffer = new BufferedWaveProvider(waveFormat);
+                buffer.AddSamples(pcm, 0, pcm.Length);
+
+                VolumeWaveProvider16 gainControl = new VolumeWaveProvider16(buffer);
+                gainControl.Volume = Program.Configuration.TxAudioGain;
+                gainControl.Read(pcm, 0, pcm.Length);
+            }
+
             int smpIdx = 0;
             short[] samples = new short[MBE_SAMPLES_LENGTH];
             for (int pcmIdx = 0; pcmIdx < pcm.Length; pcmIdx += 2)
@@ -376,6 +389,17 @@ namespace dvmbridge
                             pcm[pcmIdx + 0] = (byte)(samples[smpIdx] & 0xFF);
                             pcm[pcmIdx + 1] = (byte)((samples[smpIdx] >> 8) & 0xFF);
                             pcmIdx += 2;
+                        }
+
+                        // post-process: apply gain to decoded audio frames
+                        if (Program.Configuration.RxAudioGain != 1.0f)
+                        {
+                            BufferedWaveProvider buffer = new BufferedWaveProvider(waveFormat);
+                            buffer.AddSamples(pcm, 0, pcm.Length);
+
+                            VolumeWaveProvider16 gainControl = new VolumeWaveProvider16(buffer);
+                            gainControl.Volume = Program.Configuration.RxAudioGain;
+                            gainControl.Read(pcm, 0, pcm.Length);
                         }
 
                         // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");

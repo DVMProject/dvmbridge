@@ -343,23 +343,24 @@ namespace dvmbridge
 
             // initialize DMR vocoders
             dmrDecoder = new MBEDecoderManaged(MBEMode.DMRAMBE);
-            dmrDecoder.GainAdjust = Program.Configuration.RxAudioGain;
-            dmrDecoder.AutoGain = Program.Configuration.RxAutoGain;
+            dmrDecoder.GainAdjust = Program.Configuration.VocoderDecoderAudioGain;
+            dmrDecoder.AutoGain = Program.Configuration.VocoderDecoderAutoGain;
             dmrEncoder = new MBEEncoderManaged(MBEMode.DMRAMBE);
-            dmrEncoder.GainAdjust = Program.Configuration.TxAudioGain;
+            dmrEncoder.GainAdjust = Program.Configuration.VocoderEncoderAudioGain;
 
             // initialize P25 vocoders
             p25Decoder = new MBEDecoderManaged(MBEMode.IMBE);
-            p25Decoder.GainAdjust = Program.Configuration.RxAudioGain;
-            p25Decoder.AutoGain = Program.Configuration.RxAutoGain;
+            p25Decoder.GainAdjust = Program.Configuration.VocoderDecoderAudioGain;
+            p25Decoder.AutoGain = Program.Configuration.VocoderDecoderAutoGain;
             p25Encoder = new MBEEncoderManaged(MBEMode.IMBE);
-            p25Encoder.GainAdjust = Program.Configuration.TxAudioGain;
+            p25Encoder.GainAdjust = Program.Configuration.VocoderEncoderAudioGain;
 #if WIN32
+            // initialize external AMBE vocoder
             string codeBase = Assembly.GetExecutingAssembly().CodeBase;
             UriBuilder uri = new UriBuilder(codeBase);
             string path = Uri.UnescapeDataString(uri.Path);
 
-            // if the assembly executing directory contains the external AMBE.DLL interface DLL
+            // if the assembly executing directory contains the external DVSI USB-3000 interface DLL
             // setup the external vocoder code
             if (File.Exists(Path.Combine(new string[] { Path.GetDirectoryName(path), "AMBE.DLL" })))
             {
