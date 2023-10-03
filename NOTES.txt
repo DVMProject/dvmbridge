@@ -1,0 +1,44 @@
+* AMBE Native (i.e. interface to a native DLL providing functionality to talk to a DVSI USB-3000)
+
+A native DLL is required to interface to the DVSI USB-3000, this DLL is not published with this project, and is an exercise left to the end user using the USB vocoder to implement. Essentially, you will have to write your own Win32 DLL interface. In order to do so you should create a DLL with the following named exports:
+
+Exported Decoder functions:
+
+void ambe_init_dec(uint8_t* state, short mode);
+short ambe_get_dec_mode(uint8_t* state);
+uint32_t ambe_voice_dec(short* samples, short sampleLength, uint8_t* codeword, short bitSteal, ushort cmode, short n, uint8_t* state);
+
+Exported Encoder functions:
+
+void ambe_init_enc(uint8_t* state, short mode, short initialize);
+short ambe_get_enc_mode(uint8_t* state);
+uint32_t ambe_voice_enc(uint8_t* codeword, short bitSteal, short* samples, short sampleLength, ushort cmode, short n, short uSize, uint8_t* state);
+
+-----------------
+ Techincal notes
+-----------------
+
+dvmbridge will look for the native interop DLL with the name "AMBE.DLL" (this is important, the interface library be named *exactly* like this). If it finds the AMBE.DLL it will attempt to intialize the dongle via the interop library, and switch to using the dongle for audio decode/encode, otherwise it will fall back to using the internal MBEVocoder library.
+
+The C# class, AmbeNative, implements the native P/Invoke interop, and will take any 160 samples (in short words) or codewords, and will appropriately call the necessary interop functions.
+
+For decoding, the C# AmbeNative class calls into the decoder functions from the native DLL via P/Invoke interop. The process is as follows:
+	- DVM FNE network routines, call the AmbeNative.decode() function. This function takes an input of the AMBE/IMBE codewords in byte format,
+		and will output samples in short (16-bit) format.
+	- AmbeNative.decode() will test the codeword to see if it is a DMR codeword or P25 codeword, if the AmbeNative class is in half-rate AMBE mode, and if
+		the input codeword is the appropriate length, the decode() function will treat the codeword as a DMR codeword and, strip DMR ECC from the codeword. (72-bit AMBE to 49-bit AMBE)
+	- AmbeNative.decode() will then test to ensure the codeword length is appropriate, and proceed to unpack the codeword from byte format to bit format.
+	- AmbeNative.decode() will then call ambe_voice_dec *twice*, once for each 80 sample portion of the audio frame, each call returning 80 samples of audio. This is done for performance 
+		reasons when communicating to the native library and the dongle.
+	- AmbeNative.decode() will then combine the 2 80 sample buffers into a single 160 sample buffer and return to the calling code.
+
+For encoding, the C# AmbeNative class calls into the encoder functions from the native DLL via P/Invoke interop (just like decoding). The process is as follows:
+	- Audio routines, call the AmbeNative.encode() function. This function takes an input of samples in short (16-bit) format, and will output AMBE/IMBE codewords in byte format.
+	- AmbeNative.encode() will test the input samples to ensure the input contains 160 samples. It will then split the 160 samples into 2 buffers of 80 samples.
+	- AmbeNative.encode() will then call ambe_voice_enc *twice*, once for each 80 sample portion of the audio frame. This is done for performance reasons when communicating to the 
+		native library and the dongle.
+	- AmbeNative.encode() will then take the result of the ambe_voice_enc, which is the codeword in bits, and if encoding DMR audio frames, call the appropriate functions
+		to interleave and ECC the 49-bits of AMBE resulting in 72-bit AMBE.
+	- AmbeNative.encode() will then pack the bit format into byte format and return to the calling code.
+
+It is possible in the native interop DLL to combine the 2 80 sample buffers into a single 160 sample buffer and send that the DVSI dongle, however in testing, this seemed to cause edge cases where audio would be missed or lost. It is irrelevant whether your implementation uses all the inputs to the interop functions; the exposed inputs are simply just how I implemented my DLL (which has the side effect of dictating how the function symbols need to be defined for everyone elses implementations). This interface also makes it possible for others to implement their own encoder/decoder libraries if they desired by simply providing the 6 functions above.
