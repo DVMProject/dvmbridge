@@ -62,6 +62,10 @@ udpAudio: false
 udpSendPort: 34001
 # PCM over UDP send address destination.
 udpSendAddress: "127.0.0.1"
+# PCM over UDP receive port.
+udpReceivePort: 32001
+# PCM over UDP receive address.
+udpReceiveAddress: "127.0.0.1"
 
 # Textual Name
 name: BRIDGE
@@ -77,7 +81,7 @@ passphrase: RPT1234
 # Source "Radio ID" for transmitted audio frames.
 sourceId: 1234567
 # Flag indicating the source "Radio ID" will be overridden from the detected
-# MDC1200 pre- PTT ID.
+# MDC1200 pre- PTT ID. Also sets source "Radio ID" from the received UDP.
 overrideSourceIdFromMDC: false
 # Talkgroup ID for transmitted/received audio frames.
 destinationId: 1

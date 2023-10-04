@@ -157,7 +157,11 @@ namespace dvmbridge
         /// <summary>
         /// PCM over UDP receive port.
         /// </summary>
-        public int UdpReceivePort;
+        public int UdpReceivePort = 32001;
+        /// <summary>
+        /// PCM over UDP reciver listening address
+        /// </summary>
+        public string UdpReceiveAddress = "127.0.0.1";
 
         /// <summary>
         /// Textual Name.

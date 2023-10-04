@@ -24,6 +24,8 @@ using System;
 using System.Net;
 using System.Collections.Generic;
 using System.Text;
+using System.Net.Sockets;
+using System.Threading.Tasks;
 
 using Serilog;
 
@@ -38,6 +40,9 @@ namespace dvmbridge
     {
         protected FnePeer peer;
 
+        private UdpClient udpAudioClient;
+        private IPEndPoint endPoint;
+
         /*
         ** Methods
         */
@@ -48,6 +53,8 @@ namespace dvmbridge
         public PeerSystem() : base(Create())
         {
             this.peer = (FnePeer)fne;
+            udpAudioClient = new UdpClient(Program.Configuration.UdpReceivePort);
+            endPoint = new IPEndPoint(IPAddress.Parse(Program.Configuration.UdpReceiveAddress), Program.Configuration.UdpReceivePort);
         }
 
         /// <summary>
@@ -110,7 +117,7 @@ namespace dvmbridge
             Log.Logger.Information($"    UDP Audio: {udpAudioEnabled}");
             Log.Logger.Information($"    Source Radio ID: {Program.Configuration.SourceId}");
             string overrideSourceIdFromMDCEnabled = (Program.Configuration.OverrideSourceIdFromMDC) ? "yes" : "no";
-            Log.Logger.Information($"    Override Source Radio ID from MDC: {overrideSourceIdFromMDCEnabled}");
+            Log.Logger.Information($"    Override Source Radio ID from MDC or UDP: {overrideSourceIdFromMDCEnabled}");
             Log.Logger.Information($"    Destination ID: {Program.Configuration.DestinationId}");
             Log.Logger.Information($"    Destination DMR Slot: {Program.Configuration.Slot}");
 
@@ -124,6 +131,26 @@ namespace dvmbridge
             peer.Information.Details = ConfigurationObject.ConvertToDetails(Program.Configuration);
 
             return peer;
+        }
+        /// <summary>
+        /// Start UDP audio listener
+        /// </summary>
+        public override async Task StartListeningAsync()
+        {
+            Log.Logger.Information($"Started UDP audio listener on {Program.Configuration.UdpReceiveAddress}:{Program.Configuration.UdpReceivePort}");
+
+            while (true)
+            {
+                try
+                {
+                    UdpReceiveResult result = await udpAudioClient.ReceiveAsync();
+                    ProcessAudioData(result.Buffer);
+                }
+                catch (Exception ex)
+                {
+                    Log.Logger.Error($"Error receiving UDP data: {ex}");
+                }
+            }
         }
 
         /// <summary>

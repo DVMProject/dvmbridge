@@ -38,6 +38,7 @@ using vocoder;
 
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
+using System.Linq;
 
 namespace dvmbridge
 {
@@ -129,6 +130,8 @@ namespace dvmbridge
     /// </summary>
     public abstract partial class FneSystemBase
     {
+        public abstract Task StartListeningAsync();
+
         private const int P25_FIXED_SLOT = 2;
 
         public const int SAMPLE_RATE = 8000;
@@ -155,8 +158,8 @@ namespace dvmbridge
         private AmbeVocoder extHalfRateVocoder;
 #endif
 
-        private WaveFormat waveFormat;                  //
-        private BufferedWaveProvider waveProvider;      //
+        private WaveFormat waveFormat;
+        private BufferedWaveProvider waveProvider;
 
         private Task waveInRecorder;
         private WaveInEvent waveIn;
@@ -177,6 +180,8 @@ namespace dvmbridge
         private uint srcIdOverride = 0;
 
         private UdpClient udpClient;
+
+        private const int ListeningPort = 32001;
 
         /*
         ** Properties
@@ -480,32 +485,114 @@ namespace dvmbridge
         /// <param name="e"></param>
         private void WaveIn_DataAvailable(object sender, WaveInEventArgs e)
         {
-            int samples = SampleTimeConvert.MSToSampleBytes(waveFormat, AUDIO_BUFFER_MS);
-            if (e.BytesRecorded == samples)
+            if (!Program.Configuration.UdpAudio && Program.Configuration.LocalAudio)
             {
-                // add samples to the metering buffer
-                meterInternalBuffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
+                int samples = SampleTimeConvert.MSToSampleBytes(waveFormat, AUDIO_BUFFER_MS);
+                if (e.BytesRecorded == samples)
+                {
+                    // add samples to the metering buffer
+                    meterInternalBuffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
 
-                // trigger readback of metering buffer
+                    // trigger readback of metering buffer
+                    float[] temp = new float[meterInternalBuffer.BufferedBytes];
+                    this.meterProvider.Read(temp, 0, temp.Length);
+
+                    if (audioDetect && !callInProgress)
+                    {
+                        switch (Program.Configuration.TxMode)
+                        {
+                            case TX_MODE_DMR:
+                                DMREncodeAudioFrame(e.Buffer);
+                                break;
+                            case TX_MODE_P25:
+                                P25EncodeAudioFrame(e.Buffer);
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        public void ProcessAudioData(byte[] receivedData)
+        {
+            if (Program.Configuration.UdpAudio && !Program.Configuration.LocalAudio)
+            {
+                uint extractedSrcId;
+                if (BitConverter.IsLittleEndian)
+                {
+                    byte[] reversed = receivedData.Take(4).Reverse().ToArray();
+                    extractedSrcId = BitConverter.ToUInt32(reversed, 0);
+                }
+                else
+                {
+                    extractedSrcId = BitConverter.ToUInt32(receivedData, 0);
+                }
+                srcIdOverride = extractedSrcId;
+
+                byte[] audioData = new byte[receivedData.Length - 4];
+                Array.Copy(receivedData, 4, audioData, 0, audioData.Length);
+
+                // Add audio samples to the metering buffer
+                meterInternalBuffer.AddSamples(audioData, 0, audioData.Length);
+
+                // Read back metering buffer to check volume
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
                 this.meterProvider.Read(temp, 0, temp.Length);
 
+                // VOX logic
+                float sampleLevel = Program.Configuration.VoxSampleLevel / 1000;
+                FnePeer peer = (FnePeer)fne;
+                uint srcId = (uint)Program.Configuration.SourceId;
+                if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                {
+                    srcId = srcIdOverride;
+                }
+
+                uint dstId = (uint)Program.Configuration.DestinationId;
+
+                if (temp.Max() > sampleLevel)
+                {
+                    audioDetect = true;
+                    if (txStreamId == 0)
+                    {
+                        txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
+                        Log.Logger.Information($"({SystemName}) UDP Traffic *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
+                        SendP25TDU(true);
+                    }
+                    dropAudio.Reset();
+                }
+                else if (dropAudio.ElapsedMilliseconds > Program.Configuration.DropTimeMs)
+                {
+                    if (audioDetect)
+                    {
+                        Log.Logger.Information($"({SystemName}) UDP Traffic *CALL END       * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
+                        audioDetect = false;
+                        dropAudio.Reset();
+                        SendP25TDU();
+                        srcIdOverride = 0;
+                        txStreamId = 0;
+                    }
+                }
+                else if (!dropAudio.IsRunning)
+                {
+                    dropAudio.Start();
+                }
+
+                // If audio detection is active and no call is in progress, encode and transmit the audio
                 if (audioDetect && !callInProgress)
                 {
                     switch (Program.Configuration.TxMode)
                     {
                         case TX_MODE_DMR:
-                            DMREncodeAudioFrame(e.Buffer);
+                            DMREncodeAudioFrame(audioData);
                             break;
                         case TX_MODE_P25:
-                            P25EncodeAudioFrame(e.Buffer);
+                            P25EncodeAudioFrame(audioData);
                             break;
                     }
                 }
             }
         }
 
-        /// <summary>
         /// Helper to generate a leader tone.
         /// </summary>
         private void GenerateLeaderTone()
