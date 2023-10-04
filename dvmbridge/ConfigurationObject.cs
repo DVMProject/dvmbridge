@@ -193,6 +193,10 @@ namespace dvmbridge
         /// Flag indicating the source "Radio ID" will be overridden from the detected MDC1200 pre- PTT ID.
         /// </summary>
         public bool OverrideSourceIdFromMDC = false;
+        /// <summary>
+        /// Flag indicating the source "Radio ID" will be overridden from the received UDP PTT ID.
+        /// </summary>
+        public bool overrideSourceIdFromUDP = false;
 
         /// <summary>
         /// Talkgroup ID for transmitted/received audio frames.

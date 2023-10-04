@@ -542,9 +542,13 @@ namespace dvmbridge
                 float sampleLevel = Program.Configuration.VoxSampleLevel / 1000;
                 FnePeer peer = (FnePeer)fne;
                 uint srcId = (uint)Program.Configuration.SourceId;
-                if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+                if (srcIdOverride != 0 && Program.Configuration.overrideSourceIdFromUDP)
                 {
                     srcId = srcIdOverride;
+                }
+                else
+                {
+                    srcIdOverride = 0;
                 }
 
                 uint dstId = (uint)Program.Configuration.DestinationId;

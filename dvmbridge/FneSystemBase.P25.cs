@@ -92,7 +92,7 @@ namespace dvmbridge
         private void CreateP25MessageHdr(byte duid, ref byte[] data)
         {
             uint srcId = (uint)Program.Configuration.SourceId;
-            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+            if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.overrideSourceIdFromUDP))
                 srcId = srcIdOverride;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
@@ -635,7 +635,7 @@ namespace dvmbridge
             }
 
             uint srcId = (uint)Program.Configuration.SourceId;
-            if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
+            if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.overrideSourceIdFromUDP))
                 srcId = srcIdOverride;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
@@ -779,7 +779,7 @@ namespace dvmbridge
                             audioData[audioData.Length - 6] = (byte)(e.SrcId >> 8);
                             audioData[audioData.Length - 5] = (byte)(e.SrcId & 0xFF);
 
-                            // Embed DstId (assuming it's also uint)
+                            // Embed DstId
                             audioData[audioData.Length - 4] = (byte)(e.DstId >> 24);
                             audioData[audioData.Length - 3] = (byte)(e.DstId >> 16);
                             audioData[audioData.Length - 2] = (byte)(e.DstId >> 8);
