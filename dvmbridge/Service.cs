@@ -25,6 +25,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,6 +70,9 @@ namespace dvmbridge
 
             Log.Logger.Information($"[Bridge Service] PEER: REGISTER SYSTEM {Program.Configuration.Name} ({Program.Configuration.PeerId})");
             PeerSystem system = new PeerSystem();
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            system.StartListeningAsync();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             systems.Add(system);
             system.Start();
 
