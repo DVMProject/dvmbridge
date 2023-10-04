@@ -196,7 +196,7 @@ namespace dvmbridge
         /// <summary>
         /// Flag indicating the source "Radio ID" will be overridden from the received UDP PTT ID.
         /// </summary>
-        public bool overrideSourceIdFromUDP = false;
+        public bool OverrideSourceIdFromUDP = false;
 
         /// <summary>
         /// Talkgroup ID for transmitted/received audio frames.

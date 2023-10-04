@@ -27,6 +27,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Reflection;
+using System.Linq;
 
 using Serilog;
 
@@ -38,7 +39,6 @@ using vocoder;
 
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
-using System.Linq;
 
 namespace dvmbridge
 {
@@ -180,8 +180,6 @@ namespace dvmbridge
         private uint srcIdOverride = 0;
 
         private UdpClient udpClient;
-
-        private const int ListeningPort = 32001;
 
         /*
         ** Properties
@@ -512,6 +510,11 @@ namespace dvmbridge
                 }
             }
         }
+
+        /// <summary>
+        /// Function that gets called when receiving audio from UDP
+        /// </summary>
+        /// <param name="receivedData"></param>
         public void ProcessAudioData(byte[] receivedData)
         {
             if (Program.Configuration.UdpAudio && !Program.Configuration.LocalAudio)
@@ -542,7 +545,7 @@ namespace dvmbridge
                 float sampleLevel = Program.Configuration.VoxSampleLevel / 1000;
                 FnePeer peer = (FnePeer)fne;
                 uint srcId = (uint)Program.Configuration.SourceId;
-                if (srcIdOverride != 0 && Program.Configuration.overrideSourceIdFromUDP)
+                if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromUDP)
                 {
                     srcId = srcIdOverride;
                 }
@@ -596,7 +599,7 @@ namespace dvmbridge
                 }
             }
         }
-
+        /// <summary>
         /// Helper to generate a leader tone.
         /// </summary>
         private void GenerateLeaderTone()

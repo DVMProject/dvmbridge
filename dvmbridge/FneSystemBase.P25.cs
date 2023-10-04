@@ -92,7 +92,7 @@ namespace dvmbridge
         private void CreateP25MessageHdr(byte duid, ref byte[] data)
         {
             uint srcId = (uint)Program.Configuration.SourceId;
-            if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.overrideSourceIdFromUDP))
+            if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.OverrideSourceIdFromUDP))
                 srcId = srcIdOverride;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
@@ -635,7 +635,7 @@ namespace dvmbridge
             }
 
             uint srcId = (uint)Program.Configuration.SourceId;
-            if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.overrideSourceIdFromUDP))
+            if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.OverrideSourceIdFromUDP))
                 srcId = srcIdOverride;
             uint dstId = (uint)Program.Configuration.DestinationId;
 

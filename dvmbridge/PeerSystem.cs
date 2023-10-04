@@ -117,7 +117,9 @@ namespace dvmbridge
             Log.Logger.Information($"    UDP Audio: {udpAudioEnabled}");
             Log.Logger.Information($"    Source Radio ID: {Program.Configuration.SourceId}");
             string overrideSourceIdFromMDCEnabled = (Program.Configuration.OverrideSourceIdFromMDC) ? "yes" : "no";
-            Log.Logger.Information($"    Override Source Radio ID from MDC or UDP: {overrideSourceIdFromMDCEnabled}");
+            Log.Logger.Information($"    Override Source Radio ID from MDC: {overrideSourceIdFromMDCEnabled}");
+            string overrideSourceIdFromUDPEnabled = (Program.Configuration.OverrideSourceIdFromMDC) ? "yes" : "no";
+            Log.Logger.Information($"    Override Source Radio ID from UDP: {overrideSourceIdFromUDPEnabled}");
             Log.Logger.Information($"    Destination ID: {Program.Configuration.DestinationId}");
             Log.Logger.Information($"    Destination DMR Slot: {Program.Configuration.Slot}");
 
@@ -132,6 +134,7 @@ namespace dvmbridge
 
             return peer;
         }
+
         /// <summary>
         /// Start UDP audio listener
         /// </summary>
