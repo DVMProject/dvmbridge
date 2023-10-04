@@ -599,6 +599,7 @@ namespace dvmbridge
                 }
             }
         }
+
         /// <summary>
         /// Helper to generate a leader tone.
         /// </summary>
