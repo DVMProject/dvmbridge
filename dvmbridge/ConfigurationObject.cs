@@ -145,6 +145,10 @@ namespace dvmbridge
         /// Enable PCM audio over UDP.
         /// </summary>
         public bool UdpAudio = false;
+        /// <summary>
+        /// Enable PCM audio over UDP meta data.
+        /// </summary>
+        public bool UdpMetaData = true;
 
         /// <summary>
         /// PCM over UDP send port.
