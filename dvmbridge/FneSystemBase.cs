@@ -519,7 +519,6 @@ namespace dvmbridge
         {
             if (Program.Configuration.UdpAudio && !Program.Configuration.LocalAudio)
             {
-<<<<<<< HEAD
                 byte[] audioData;
                 uint extractedSrcId = 0;
 
@@ -543,30 +542,10 @@ namespace dvmbridge
                 {
                     audioData = receivedData;
                 }
-=======
-                uint extractedSrcId;
-                if (BitConverter.IsLittleEndian)
-                {
-                    byte[] reversed = receivedData.Take(4).Reverse().ToArray();
-                    extractedSrcId = BitConverter.ToUInt32(reversed, 0);
-                }
-                else
-                {
-                    extractedSrcId = BitConverter.ToUInt32(receivedData, 0);
-                }
-                srcIdOverride = extractedSrcId;
-
-                byte[] audioData = new byte[receivedData.Length - 4];
-                Array.Copy(receivedData, 4, audioData, 0, audioData.Length);
->>>>>>> refs/remotes/origin/master
 
                 // Add audio samples to the metering buffer
                 meterInternalBuffer.AddSamples(audioData, 0, audioData.Length);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> refs/remotes/origin/master
                 // Read back metering buffer to check volume
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
                 this.meterProvider.Read(temp, 0, temp.Length);
@@ -613,10 +592,6 @@ namespace dvmbridge
                 {
                     dropAudio.Start();
                 }
-<<<<<<< HEAD
-                Console.WriteLine(audioData.Length);
-=======
->>>>>>> refs/remotes/origin/master
 
                 // If audio detection is active and no call is in progress, encode and transmit the audio
                 if (audioDetect && !callInProgress)
