@@ -770,6 +770,7 @@ namespace dvmbridge
 
                         if (Program.Configuration.UdpAudio)
                         {
+<<<<<<< HEAD
                             byte[] audioData;
 
                             if (!Program.Configuration.UdpMetaData)
@@ -794,6 +795,22 @@ namespace dvmbridge
                                 audioData[audioData.Length - 2] = (byte)(e.DstId >> 8);
                                 audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
                             }
+=======
+                            byte[] audioData = new byte[samples.Length * 2 + 8];  // Added 8 for SrcId and DstId
+                            Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length - 8);  // Subtract 8 instead of 4
+
+                            // Embed SrcId
+                            audioData[audioData.Length - 8] = (byte)(e.SrcId >> 24);
+                            audioData[audioData.Length - 7] = (byte)(e.SrcId >> 16);
+                            audioData[audioData.Length - 6] = (byte)(e.SrcId >> 8);
+                            audioData[audioData.Length - 5] = (byte)(e.SrcId & 0xFF);
+
+                            // Embed DstId
+                            audioData[audioData.Length - 4] = (byte)(e.DstId >> 24);
+                            audioData[audioData.Length - 3] = (byte)(e.DstId >> 16);
+                            audioData[audioData.Length - 2] = (byte)(e.DstId >> 8);
+                            audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
+>>>>>>> refs/remotes/origin/master
 
                             IPAddress destinationIP = IPAddress.Parse(Program.Configuration.UdpSendAddress);
                             udpClient.Send(audioData, audioData.Length, new IPEndPoint(destinationIP, Program.Configuration.UdpSendPort));
