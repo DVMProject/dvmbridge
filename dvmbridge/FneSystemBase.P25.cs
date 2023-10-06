@@ -772,7 +772,7 @@ namespace dvmbridge
                         {
                             byte[] audioData;
 
-                            if (Program.Configuration.UdpMetaData)
+                            if (!Program.Configuration.UdpMetaData)
                             {
                                 audioData = new byte[samples.Length * 2];
                                 Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length);
