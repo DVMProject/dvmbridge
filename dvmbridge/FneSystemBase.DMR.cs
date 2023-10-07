@@ -408,12 +408,30 @@ namespace dvmbridge
 
                         if (Program.Configuration.UdpAudio)
                         {
-                            byte[] audioData = new byte[samples.Length * 2 + 4];
-                            Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length - 4);
-                            audioData[audioData.Length - 4] = (byte)((e.SrcId >> 8) & 0xFF);
-                            audioData[audioData.Length - 3] = (byte)(e.SrcId & 0xFF);
-                            audioData[audioData.Length - 2] = (byte)((e.DstId >> 8) & 0xFF);
-                            audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
+                            byte[] audioData;
+
+                            if (!Program.Configuration.UdpMetaData)
+                            {
+                                audioData = new byte[samples.Length * 2];
+                                Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length);
+                            }
+                            else
+                            {
+                                audioData = new byte[samples.Length * 2 + 8];  // 8 bytes for SrcId and DstId
+                                Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length - 8);
+
+                                // Embed SrcId
+                                audioData[audioData.Length - 8] = (byte)(e.SrcId >> 24);
+                                audioData[audioData.Length - 7] = (byte)(e.SrcId >> 16);
+                                audioData[audioData.Length - 6] = (byte)(e.SrcId >> 8);
+                                audioData[audioData.Length - 5] = (byte)(e.SrcId & 0xFF);
+
+                                // Embed DstId
+                                audioData[audioData.Length - 4] = (byte)(e.DstId >> 24);
+                                audioData[audioData.Length - 3] = (byte)(e.DstId >> 16);
+                                audioData[audioData.Length - 2] = (byte)(e.DstId >> 8);
+                                audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
+                            }
 
                             IPAddress destinationIP = IPAddress.Parse(Program.Configuration.UdpSendAddress);
                             udpClient.Send(audioData, audioData.Length, new IPEndPoint(destinationIP, Program.Configuration.UdpSendPort));

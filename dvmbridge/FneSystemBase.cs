@@ -519,20 +519,29 @@ namespace dvmbridge
         {
             if (Program.Configuration.UdpAudio && !Program.Configuration.LocalAudio)
             {
-                uint extractedSrcId;
-                if (BitConverter.IsLittleEndian)
+                byte[] audioData;
+                uint extractedSrcId = 0;
+
+                if (Program.Configuration.UdpMetaData)
                 {
-                    byte[] reversed = receivedData.Take(4).Reverse().ToArray();
-                    extractedSrcId = BitConverter.ToUInt32(reversed, 0);
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        byte[] reversed = receivedData.Take(4).Reverse().ToArray();
+                        extractedSrcId = BitConverter.ToUInt32(reversed, 0);
+                    }
+                    else
+                    {
+                        extractedSrcId = BitConverter.ToUInt32(receivedData, 0);
+                    }
+                    srcIdOverride = extractedSrcId;
+
+                    audioData = new byte[receivedData.Length - 4];
+                    Array.Copy(receivedData, 4, audioData, 0, audioData.Length);
                 }
                 else
                 {
-                    extractedSrcId = BitConverter.ToUInt32(receivedData, 0);
+                    audioData = receivedData;
                 }
-                srcIdOverride = extractedSrcId;
-
-                byte[] audioData = new byte[receivedData.Length - 4];
-                Array.Copy(receivedData, 4, audioData, 0, audioData.Length);
 
                 // Add audio samples to the metering buffer
                 meterInternalBuffer.AddSamples(audioData, 0, audioData.Length);
