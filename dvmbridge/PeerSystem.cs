@@ -53,8 +53,13 @@ namespace dvmbridge
         public PeerSystem() : base(Create())
         {
             this.peer = (FnePeer)fne;
-            udpAudioClient = new UdpClient(Program.Configuration.UdpReceivePort);
-            endPoint = new IPEndPoint(IPAddress.Parse(Program.Configuration.UdpReceiveAddress), Program.Configuration.UdpReceivePort);
+
+            // only initialize the audio client if we are using UDP audio
+            if (Program.Configuration.UdpAudio)
+            {
+                udpAudioClient = new UdpClient(Program.Configuration.UdpReceivePort);
+                endPoint = new IPEndPoint(IPAddress.Parse(Program.Configuration.UdpReceiveAddress), Program.Configuration.UdpReceivePort);
+            }
         }
 
         /// <summary>
@@ -140,18 +145,22 @@ namespace dvmbridge
         /// </summary>
         public override async Task StartListeningAsync()
         {
-            Log.Logger.Information($"Started UDP audio listener on {Program.Configuration.UdpReceiveAddress}:{Program.Configuration.UdpReceivePort}");
-
-            while (true)
+            // only initialize the audio client if we are using UDP audio
+            if (Program.Configuration.UdpAudio)
             {
-                try
+                Log.Logger.Information($"Started UDP audio listener on {Program.Configuration.UdpReceiveAddress}:{Program.Configuration.UdpReceivePort}");
+
+                while (true)
                 {
-                    UdpReceiveResult result = await udpAudioClient.ReceiveAsync();
-                    ProcessAudioData(result.Buffer);
-                }
-                catch (Exception ex)
-                {
-                    Log.Logger.Error($"Error receiving UDP data: {ex}");
+                    try
+                    {
+                        UdpReceiveResult result = await udpAudioClient.ReceiveAsync();
+                        ProcessAudioData(result.Buffer);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Logger.Error($"Error receiving UDP data: {ex}");
+                    }
                 }
             }
         }
