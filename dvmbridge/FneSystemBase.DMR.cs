@@ -528,8 +528,6 @@ namespace dvmbridge
                 status[e.Slot].RxTime = pktTime;
                 status[e.Slot].RxStreamId = e.StreamId;
             }
-            else
-                Log.Logger.Warning($"({SystemName}) DMRD: Bridge does not support private calls.");
 
             return;
         }

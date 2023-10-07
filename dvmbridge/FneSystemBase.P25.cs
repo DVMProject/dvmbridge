@@ -964,8 +964,6 @@ namespace dvmbridge
                 status[P25_FIXED_SLOT].RxTime = pktTime;
                 status[P25_FIXED_SLOT].RxStreamId = e.StreamId;
             }
-            else
-                Log.Logger.Warning($"({SystemName}) P25D: Bridge does not support private calls.");
 
             return;
         }
