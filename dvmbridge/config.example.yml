@@ -87,7 +87,7 @@ sourceId: 1234567
 overrideSourceIdFromMDC: false
 # Flag indicating the source "Radio ID" will be overridden from the received
 # UDP SRC ID.
-overrideSourceIdFromUDP: true
+overrideSourceIdFromUDP: false
 # Talkgroup ID for transmitted/received audio frames.
 destinationId: 1
 # Slot for received/transmitted audio frames.

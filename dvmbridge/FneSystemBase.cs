@@ -25,6 +25,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
 using System.Linq;
@@ -130,6 +131,9 @@ namespace dvmbridge
     /// </summary>
     public abstract partial class FneSystemBase
     {
+        private const string LOCAL_CALL = "Local Traffic";
+        private const string UDP_CALL = "UDP Traffic";
+
         public abstract Task StartListeningAsync();
 
         private const int P25_FIXED_SLOT = 2;
@@ -166,7 +170,9 @@ namespace dvmbridge
         private MDCWaveIn mdcProcessor;
 
         private Stopwatch dropAudio;
+        private int dropTimeMs;
         bool audioDetect;
+        bool trafficFromUdp;
 
         private BufferedWaveProvider meterInternalBuffer;
         private SampleChannel sampleChannel;
@@ -178,6 +184,8 @@ namespace dvmbridge
         private uint txStreamId;
 
         private uint srcIdOverride = 0;
+        private uint udpSrcId = 0;
+        private uint udpDstId = 0;
 
         private UdpClient udpClient;
 
@@ -299,27 +307,82 @@ namespace dvmbridge
             this.udpClient = new UdpClient();
 
             this.dropAudio = new Stopwatch();
+            this.dropTimeMs = Program.Configuration.DropTimeMs;
+
+            // "stuck" call (improperly ended call) checker thread
+            Task.Factory.StartNew(() =>
+            {
+                while (true)
+                {
+                    string trafficType = LOCAL_CALL;
+                    if (trafficFromUdp)
+                        trafficType = UDP_CALL;
+
+                    // if we've exceeded the audio drop timeout, then really drop the audio
+                    if ((dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > dropTimeMs * 2)) ||
+                        (!dropAudio.IsRunning && !audioDetect && callInProgress))
+                    {
+                        if (audioDetect)
+                        {
+                            Log.Logger.Information($"({SystemName}) {trafficType} *CALL END (S)   * PEER {fne.PeerId} [STREAM ID {txStreamId}]");
+
+                            audioDetect = false;
+                            dropAudio.Reset();
+#if !ENCODER_LOOPBACK_TEST
+                            if (!callInProgress)
+                            {
+                                switch (Program.Configuration.TxMode)
+                                {
+                                    case TX_MODE_DMR:
+                                        SendDMRTerminator();
+                                        break;
+                                    case TX_MODE_P25:
+                                        SendP25TDU();
+                                        break;
+                                }
+                            }
+#endif
+                            srcIdOverride = 0;
+                            txStreamId = 0;
+
+                            dropTimeMs = Program.Configuration.DropTimeMs;
+
+                            udpSrcId = 0;
+                            udpDstId = 0;
+                            trafficFromUdp = false;
+                        }
+                    }
+
+                    Thread.Sleep(5);
+                }
+            });
+
             this.audioDetect = false;
+            this.trafficFromUdp = false;
 
             this.waveFormat = new WaveFormat(SAMPLE_RATE, BITS_PER_SECOND, 1);
 
-            // initialize the output audio provider
-            this.waveOut = new WaveOut();
-            this.waveOut.DeviceNumber = Program.WaveOutDevice;
+            this.meterInternalBuffer = new BufferedWaveProvider(waveFormat);
+            this.meterInternalBuffer.DiscardOnBufferOverflow = true;
 
-            this.waveProvider = new BufferedWaveProvider(waveFormat) { DiscardOnBufferOverflow = true };
-            this.waveOut.Init(waveProvider);
-            this.waveOut.Play();
+            this.sampleChannel = new SampleChannel(meterInternalBuffer);
+            this.meterProvider = new MeteringSampleProvider(sampleChannel);
+            this.meterProvider.StreamVolume += MeterProvider_StreamVolume;
+
+            // initialize the output audio provider
+            if (Program.WaveOutDevice != -1)
+            {
+                this.waveOut = new WaveOut();
+                this.waveOut.DeviceNumber = Program.WaveOutDevice;
+
+                this.waveProvider = new BufferedWaveProvider(waveFormat) { DiscardOnBufferOverflow = true };
+                this.waveOut.Init(waveProvider);
+                this.waveOut.Play();
+            }
 
             // initialize the primary input audio provider
             if (Program.WaveInDevice != -1)
             {
-                this.meterInternalBuffer = new BufferedWaveProvider(waveFormat);
-                this.meterInternalBuffer.DiscardOnBufferOverflow = true;
-                this.sampleChannel = new SampleChannel(meterInternalBuffer);
-                this.meterProvider = new MeteringSampleProvider(sampleChannel);
-                this.meterProvider.StreamVolume += MeterProvider_StreamVolume;
-
                 waveInRecorder = Task.Factory.StartNew(() =>
                 {
                     this.waveIn = new WaveInEvent();
@@ -420,6 +483,13 @@ namespace dvmbridge
 
             uint dstId = (uint)Program.Configuration.DestinationId;
 
+            string trafficType = LOCAL_CALL;
+            if (trafficFromUdp)
+            {
+                srcId = udpSrcId;
+                trafficType = UDP_CALL;
+            }
+
             // handle Rx triggered by internal VOX
             if (e.MaxSampleValues[0] > sampleLevel)
             {
@@ -427,7 +497,7 @@ namespace dvmbridge
                 if (txStreamId == 0)
                 {
                     txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
-                    Log.Logger.Information($"({SystemName}) Local Traffic *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
+                    Log.Logger.Information($"({SystemName}) {trafficType} *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                     if (Program.Configuration.GrantDemand)
                     {
@@ -444,11 +514,11 @@ namespace dvmbridge
             else
             {
                 // if we've exceeded the audio drop timeout, then really drop the audio
-                if (dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > Program.Configuration.DropTimeMs))
+                if (dropAudio.IsRunning && (dropAudio.ElapsedMilliseconds > dropTimeMs))
                 {
                     if (audioDetect)
                     {
-                        Log.Logger.Information($"({SystemName}) Local Traffic *CALL END       * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
+                        Log.Logger.Information($"({SystemName}) {trafficType} *CALL END       * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                         audioDetect = false;
                         dropAudio.Reset();
@@ -468,6 +538,12 @@ namespace dvmbridge
 #endif
                         srcIdOverride = 0;
                         txStreamId = 0;
+
+                        dropTimeMs = Program.Configuration.DropTimeMs;
+
+                        udpSrcId = 0;
+                        udpDstId = 0;
+                        trafficFromUdp = false;
                     }
                 }
 
@@ -519,78 +595,57 @@ namespace dvmbridge
         {
             if (Program.Configuration.UdpAudio && !Program.Configuration.LocalAudio)
             {
-                byte[] audioData;
-                uint extractedSrcId = 0;
+                // Log.Logger.Debug($"UDP RECV BYTE BUFFER {FneUtils.HexDump(receivedData)}");
 
+                int pcmLength = FneUtils.ToInt32(receivedData, 0);
+                byte[] pcm = new byte[pcmLength];
+                for (int idx = 0; idx < pcmLength; idx++)
+                    pcm[idx] = receivedData[idx + 4];
+
+                // Log.Logger.Debug($"PCM RECV BYTE BUFFER {FneUtils.HexDump(pcm)}");
+
+                udpSrcId = (uint)Program.Configuration.SourceId;
                 if (Program.Configuration.UdpMetaData)
                 {
-                    if (BitConverter.IsLittleEndian)
-                    {
-                        byte[] reversed = receivedData.Take(4).Reverse().ToArray();
-                        extractedSrcId = BitConverter.ToUInt32(reversed, 0);
-                    }
-                    else
-                    {
-                        extractedSrcId = BitConverter.ToUInt32(receivedData, 0);
-                    }
-                    srcIdOverride = extractedSrcId;
-
-                    audioData = new byte[receivedData.Length - 4];
-                    Array.Copy(receivedData, 4, audioData, 0, audioData.Length);
-                }
-                else
-                {
-                    audioData = receivedData;
+                    if (Program.Configuration.OverrideSourceIdFromUDP)
+                        udpSrcId = FneUtils.ToUInt32(receivedData, pcmLength + 8);
                 }
 
-                // Add audio samples to the metering buffer
-                meterInternalBuffer.AddSamples(audioData, 0, audioData.Length);
+                udpDstId = (uint)Program.Configuration.DestinationId;
 
-                // Read back metering buffer to check volume
+                // add audio samples to the metering buffer
+                meterInternalBuffer.AddSamples(pcm, 0, pcm.Length);
+
+                // read back metering buffer to check volume
                 float[] temp = new float[meterInternalBuffer.BufferedBytes];
-                this.meterProvider.Read(temp, 0, temp.Length);
+                meterProvider.Read(temp, 0, temp.Length);
 
-                // VOX logic
-                float sampleLevel = Program.Configuration.VoxSampleLevel / 1000;
-                FnePeer peer = (FnePeer)fne;
-                uint srcId = (uint)Program.Configuration.SourceId;
-                if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromUDP)
-                {
-                    srcId = srcIdOverride;
-                }
-                else
-                {
-                    srcIdOverride = 0;
-                }
+                trafficFromUdp = true;
 
-                uint dstId = (uint)Program.Configuration.DestinationId;
-
-                if (temp.Max() > sampleLevel)
+                // force start a call if one isn't already in progress
+                if (!audioDetect && !callInProgress)
                 {
                     audioDetect = true;
                     if (txStreamId == 0)
                     {
                         txStreamId = (uint)rand.Next(int.MinValue, int.MaxValue);
-                        Log.Logger.Information($"({SystemName}) UDP Traffic *CALL START     * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
-                        SendP25TDU(true);
+                        Log.Logger.Information($"({SystemName}) {UDP_CALL} *CALL START     * PEER {fne.PeerId} SRC_ID {udpSrcId} TGID {udpDstId} [STREAM ID {txStreamId}]");
+
+                        if (Program.Configuration.GrantDemand)
+                        {
+                            switch (Program.Configuration.TxMode)
+                            {
+                                case TX_MODE_P25:
+                                    SendP25TDU(true);
+                                    break;
+                            }
+                        }
                     }
                     dropAudio.Reset();
-                }
-                else if (dropAudio.ElapsedMilliseconds > Program.Configuration.DropTimeMs)
-                {
-                    if (audioDetect)
-                    {
-                        Log.Logger.Information($"({SystemName}) UDP Traffic *CALL END       * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
-                        audioDetect = false;
-                        dropAudio.Reset();
-                        SendP25TDU();
-                        srcIdOverride = 0;
-                        txStreamId = 0;
-                    }
-                }
-                else if (!dropAudio.IsRunning)
-                {
-                    dropAudio.Start();
+                    dropTimeMs = Program.Configuration.DropTimeMs * 2; // double length drop time for UDP start
+
+                    if (!dropAudio.IsRunning)
+                        dropAudio.Start();
                 }
 
                 // If audio detection is active and no call is in progress, encode and transmit the audio
@@ -599,10 +654,10 @@ namespace dvmbridge
                     switch (Program.Configuration.TxMode)
                     {
                         case TX_MODE_DMR:
-                            DMREncodeAudioFrame(audioData);
+                            DMREncodeAudioFrame(pcm, udpSrcId);
                             break;
                         case TX_MODE_P25:
-                            P25EncodeAudioFrame(audioData);
+                            P25EncodeAudioFrame(pcm, udpSrcId);
                             break;
                     }
                 }

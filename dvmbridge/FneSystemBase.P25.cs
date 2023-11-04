@@ -89,11 +89,14 @@ namespace dvmbridge
         /// </summary>
         /// <param name="duid"></param>
         /// <param name="data"></param>
-        private void CreateP25MessageHdr(byte duid, ref byte[] data)
+        /// <param name="forcedSrcId"></param>
+        private void CreateP25MessageHdr(byte duid, ref byte[] data, uint forcedSrcId = 0)
         {
             uint srcId = (uint)Program.Configuration.SourceId;
             if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.OverrideSourceIdFromUDP))
                 srcId = srcIdOverride;
+            if (forcedSrcId > 0 && forcedSrcId != (uint)Program.Configuration.SourceId)
+                srcId = forcedSrcId;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
             FneUtils.StringToBytes(Constants.TAG_P25_DATA, data, 0, Constants.TAG_P25_DATA.Length);
@@ -152,7 +155,8 @@ namespace dvmbridge
         /// <param name="offset"></param>
         /// <param name="imbe"></param>
         /// <param name="frameType"></param>
-        private void EncodeLDU1(ref byte[] data, int offset, byte[] imbe, byte frameType)
+        /// <param name="srcIdOverride"></param>
+        private void EncodeLDU1(ref byte[] data, int offset, byte[] imbe, byte frameType, uint srcIdOverride = 0)
         {
             if (data == null)
                 throw new ArgumentNullException("data");
@@ -200,6 +204,8 @@ namespace dvmbridge
 
             uint dstId = (uint)Program.Configuration.DestinationId;
             uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride > 0 && srcIdOverride != (uint)Program.Configuration.SourceId)
+                srcId = srcIdOverride;
 
             // different frame types mean different things
             switch (frameType)
@@ -281,46 +287,47 @@ namespace dvmbridge
         /// Creates an P25 LDU1 frame message.
         /// </summary>
         /// <param name="data"></param>
-        private void CreateP25LDU1Message(ref byte[] data)
+        /// <param name="srcId"></param>
+        private void CreateP25LDU1Message(ref byte[] data, uint srcId = 0)
         {
             // pack DFSI data
             int count = P25_MSG_HDR_SIZE;
             byte[] imbe = new byte[IMBE_BUF_LEN];
 
             Buffer.BlockCopy(netLDU1, 10, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 24, imbe, P25DFSI.P25_DFSI_LDU1_VOICE1);
+            EncodeLDU1(ref data, 24, imbe, P25DFSI.P25_DFSI_LDU1_VOICE1, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE1_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 26, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 46, imbe, P25DFSI.P25_DFSI_LDU1_VOICE2);
+            EncodeLDU1(ref data, 46, imbe, P25DFSI.P25_DFSI_LDU1_VOICE2, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE2_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 55, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 60, imbe, P25DFSI.P25_DFSI_LDU1_VOICE3);
+            EncodeLDU1(ref data, 60, imbe, P25DFSI.P25_DFSI_LDU1_VOICE3, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE3_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 80, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 77, imbe, P25DFSI.P25_DFSI_LDU1_VOICE4);
+            EncodeLDU1(ref data, 77, imbe, P25DFSI.P25_DFSI_LDU1_VOICE4, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE4_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 105, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 94, imbe, P25DFSI.P25_DFSI_LDU1_VOICE5);
+            EncodeLDU1(ref data, 94, imbe, P25DFSI.P25_DFSI_LDU1_VOICE5, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE5_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 130, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 111, imbe, P25DFSI.P25_DFSI_LDU1_VOICE6);
+            EncodeLDU1(ref data, 111, imbe, P25DFSI.P25_DFSI_LDU1_VOICE6, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE6_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 155, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 128, imbe, P25DFSI.P25_DFSI_LDU1_VOICE7);
+            EncodeLDU1(ref data, 128, imbe, P25DFSI.P25_DFSI_LDU1_VOICE7, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE7_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 180, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 145, imbe, P25DFSI.P25_DFSI_LDU1_VOICE8);
+            EncodeLDU1(ref data, 145, imbe, P25DFSI.P25_DFSI_LDU1_VOICE8, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE8_FRAME_LENGTH_BYTES;
 
             Buffer.BlockCopy(netLDU1, 204, imbe, 0, IMBE_BUF_LEN);
-            EncodeLDU1(ref data, 162, imbe, P25DFSI.P25_DFSI_LDU1_VOICE9);
+            EncodeLDU1(ref data, 162, imbe, P25DFSI.P25_DFSI_LDU1_VOICE9, srcId);
             count += (int)P25DFSI.P25_DFSI_LDU1_VOICE9_FRAME_LENGTH_BYTES;
 
             data[23U] = (byte)count;
@@ -508,7 +515,9 @@ namespace dvmbridge
         /// Helper to encode and transmit PCM audio as P25 IMBE frames.
         /// </summary>
         /// <param name="pcm"></param>
-        private void P25EncodeAudioFrame(byte[] pcm)
+        /// <param name="forcedSrcId"></param>
+        /// <param name="forcedDstId"></param>
+        private void P25EncodeAudioFrame(byte[] pcm, uint forcedSrcId = 0, uint forcedDstId = 0)
         {
             if (p25N > 17)
                 p25N = 0;
@@ -637,7 +646,11 @@ namespace dvmbridge
             uint srcId = (uint)Program.Configuration.SourceId;
             if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.OverrideSourceIdFromUDP))
                 srcId = srcIdOverride;
+            if (forcedSrcId > 0 && forcedSrcId != (uint)Program.Configuration.SourceId)
+                srcId = forcedSrcId;
             uint dstId = (uint)Program.Configuration.DestinationId;
+            if (forcedDstId > 0 && forcedSrcId != (uint)Program.Configuration.DestinationId)
+                dstId = forcedDstId;
 
             FnePeer peer = (FnePeer)fne;
 
@@ -653,8 +666,8 @@ namespace dvmbridge
                 Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                 byte[] payload = new byte[200];
-                CreateP25MessageHdr((byte)P25DUID.LDU1, ref payload);
-                CreateP25LDU1Message(ref payload);
+                CreateP25MessageHdr((byte)P25DUID.LDU1, ref payload, srcId);
+                CreateP25LDU1Message(ref payload, srcId);
 
                 peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
             }
@@ -671,7 +684,7 @@ namespace dvmbridge
                 Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                 byte[] payload = new byte[200];
-                CreateP25MessageHdr((byte)P25DUID.LDU2, ref payload);
+                CreateP25MessageHdr((byte)P25DUID.LDU2, ref payload, srcId);
                 CreateP25LDU2Message(ref payload);
 
                 peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
@@ -740,7 +753,7 @@ namespace dvmbridge
                     {
                         Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} VC{n} ERRS {errs} [STREAM ID {e.StreamId}]");
                         // Log.Logger.Debug($"IMBE {FneUtils.HexDump(imbe)}");
-                         Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
+                        // Log.Logger.Debug($"SAMPLE BUFFER {FneUtils.HexDump(samples)}");
 
                         int pcmIdx = 0;
                         byte[] pcm = new byte[samples.Length * 2];
@@ -763,37 +776,35 @@ namespace dvmbridge
                             gainControl.Read(pcm, 0, pcm.Length);
                         }
 
-                        // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
-
+                        // Log.Logger.Debug($"PCM BYTE BUFFER {FneUtils.HexDump(pcm)}");
                         if (Program.Configuration.LocalAudio)
                             waveProvider.AddSamples(pcm, 0, pcm.Length);
 
                         if (Program.Configuration.UdpAudio)
                         {
-                            byte[] audioData;
-
+                            byte[] audioData = null;
                             if (!Program.Configuration.UdpMetaData)
                             {
-                                audioData = new byte[samples.Length * 2];
-                                Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length);
+                                audioData = new byte[pcm.Length + 4]; // PCM + 4 bytes (PCM length)
+                                FneUtils.WriteBytes(pcm.Length, ref audioData, 0);
+                                for (int idx = 0; idx < pcm.Length; idx++)
+                                    audioData[idx + 4] = pcm[idx];
                             }
                             else
                             {
-                                audioData = new byte[samples.Length * 2 + 8];  // 8 bytes for SrcId and DstId
-                                Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length - 8);
+                                audioData = new byte[pcm.Length + 12]; // PCM + (4 bytes (PCM length) + 4 bytes (srcId) + 4 bytes (dstId))
+                                FneUtils.WriteBytes(pcm.Length, ref audioData, 0);
+                                for (int idx = 0; idx < pcm.Length; idx++)
+                                    audioData[idx + 4] = pcm[idx];
 
-                                // Embed SrcId
-                                audioData[audioData.Length - 8] = (byte)(e.SrcId >> 24);
-                                audioData[audioData.Length - 7] = (byte)(e.SrcId >> 16);
-                                audioData[audioData.Length - 6] = (byte)(e.SrcId >> 8);
-                                audioData[audioData.Length - 5] = (byte)(e.SrcId & 0xFF);
+                                // embed destination ID
+                                FneUtils.WriteBytes(e.DstId, ref audioData, pcm.Length + 4);
 
-                                // Embed DstId
-                                audioData[audioData.Length - 4] = (byte)(e.DstId >> 24);
-                                audioData[audioData.Length - 3] = (byte)(e.DstId >> 16);
-                                audioData[audioData.Length - 2] = (byte)(e.DstId >> 8);
-                                audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
+                                // embed source ID
+                                FneUtils.WriteBytes(e.SrcId, ref audioData, pcm.Length + 8);
                             }
+
+                            // Log.Logger.Debug($"UDP SEND BYTE BUFFER {FneUtils.HexDump(audioData)}");
 
                             IPAddress destinationIP = IPAddress.Parse(Program.Configuration.UdpSendAddress);
                             udpClient.Send(audioData, audioData.Length, new IPEndPoint(destinationIP, Program.Configuration.UdpSendPort));

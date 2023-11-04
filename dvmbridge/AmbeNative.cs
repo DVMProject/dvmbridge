@@ -419,9 +419,6 @@ namespace dvmbridge
 
                 // use the managed vocoder to create the ECC'ed and interleaved AMBE bits
                 interleaver.encode(bits, out codeword);
-
-                // pack codeword from bits to bytes for use with external library
-                packBitsToBytes(codewordBits, out codeword, 9, 72);
             }
             else
             {

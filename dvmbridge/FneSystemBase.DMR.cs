@@ -188,12 +188,18 @@ namespace dvmbridge
         /// Helper to encode and transmit PCM audio as DMR AMBE frames.
         /// </summary>
         /// <param name="pcm"></param>
-        private void DMREncodeAudioFrame(byte[] pcm)
+        /// <param name="forcedSrcId"></param>
+        /// <param name="forcedDstId"></param>
+        private void DMREncodeAudioFrame(byte[] pcm, uint forcedSrcId = 0, uint forcedDstId = 0)
         {
             uint srcId = (uint)Program.Configuration.SourceId;
             if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
                 srcId = srcIdOverride;
+            if (forcedSrcId > 0 && forcedSrcId != (uint)Program.Configuration.SourceId)
+                srcId = forcedSrcId;
             uint dstId = (uint)Program.Configuration.DestinationId;
+            if (forcedDstId > 0 && forcedSrcId != (uint)Program.Configuration.DestinationId)
+                dstId = forcedDstId;
 
             byte slot = (byte)Program.Configuration.Slot;
 #if ENCODER_LOOPBACK_TEST
@@ -402,36 +408,35 @@ namespace dvmbridge
                             gainControl.Read(pcm, 0, pcm.Length);
                         }
 
-                        // Log.Logger.Debug($"BYTE BUFFER {FneUtils.HexDump(pcm)}");
+                        // Log.Logger.Debug($"PCM BYTE BUFFER {FneUtils.HexDump(pcm)}");
                         if (Program.Configuration.LocalAudio)
                             waveProvider.AddSamples(pcm, 0, pcm.Length);
 
                         if (Program.Configuration.UdpAudio)
                         {
-                            byte[] audioData;
-
+                            byte[] audioData = null;
                             if (!Program.Configuration.UdpMetaData)
                             {
-                                audioData = new byte[samples.Length * 2];
-                                Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length);
+                                audioData = new byte[pcm.Length + 4]; // PCM + 4 bytes (PCM length)
+                                FneUtils.WriteBytes(pcm.Length, ref audioData, 0);
+                                for (int idx = 0; idx < pcm.Length; idx++)
+                                    audioData[idx + 4] = pcm[idx];
                             }
                             else
                             {
-                                audioData = new byte[samples.Length * 2 + 8];  // 8 bytes for SrcId and DstId
-                                Buffer.BlockCopy(samples, 0, audioData, 0, audioData.Length - 8);
+                                audioData = new byte[pcm.Length + 12]; // PCM + (4 bytes (PCM length) + 4 bytes (srcId) + 4 bytes (dstId))
+                                FneUtils.WriteBytes(pcm.Length, ref audioData, 0);
+                                for (int idx = 0; idx < pcm.Length; idx++)
+                                    audioData[idx + 4] = pcm[idx];
 
-                                // Embed SrcId
-                                audioData[audioData.Length - 8] = (byte)(e.SrcId >> 24);
-                                audioData[audioData.Length - 7] = (byte)(e.SrcId >> 16);
-                                audioData[audioData.Length - 6] = (byte)(e.SrcId >> 8);
-                                audioData[audioData.Length - 5] = (byte)(e.SrcId & 0xFF);
+                                // embed destination ID
+                                FneUtils.WriteBytes(e.DstId, ref audioData, pcm.Length + 4);
 
-                                // Embed DstId
-                                audioData[audioData.Length - 4] = (byte)(e.DstId >> 24);
-                                audioData[audioData.Length - 3] = (byte)(e.DstId >> 16);
-                                audioData[audioData.Length - 2] = (byte)(e.DstId >> 8);
-                                audioData[audioData.Length - 1] = (byte)(e.DstId & 0xFF);
+                                // embed source ID
+                                FneUtils.WriteBytes(e.SrcId, ref audioData, pcm.Length + 8);
                             }
+
+                            // Log.Logger.Debug($"UDP SEND BYTE BUFFER {FneUtils.HexDump(audioData)}");
 
                             IPAddress destinationIP = IPAddress.Parse(Program.Configuration.UdpSendAddress);
                             udpClient.Send(audioData, audioData.Length, new IPEndPoint(destinationIP, Program.Configuration.UdpSendPort));
