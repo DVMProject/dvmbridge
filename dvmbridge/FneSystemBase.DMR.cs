@@ -458,7 +458,10 @@ namespace dvmbridge
         protected virtual void DMRDataReceived(object sender, DMRDataReceivedEvent e)
         {
             DateTime pktTime = DateTime.Now;
-            
+
+            if (Program.Configuration.TxMode != TX_MODE_DMR)
+                return;
+
             byte[] data = new byte[DMR_FRAME_LENGTH_BYTES];
             Buffer.BlockCopy(e.Data, 20, data, 0, DMR_FRAME_LENGTH_BYTES);
             byte bits = e.Data[15];

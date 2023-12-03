@@ -827,6 +827,9 @@ namespace dvmbridge
         {
             DateTime pktTime = DateTime.Now;
 
+            if (Program.Configuration.TxMode != TX_MODE_P25)
+                return;
+
             if (e.DUID == P25DUID.HDU || e.DUID == P25DUID.TSDU || e.DUID == P25DUID.PDU)
                 return;
 
