@@ -129,7 +129,7 @@ namespace dvmbridge
     /// <summary>
     /// Implements a FNE system.
     /// </summary>
-    public abstract partial class FneSystemBase
+    public abstract partial class FneSystemBase : fnecore.FneSystemBase
     {
         private const string LOCAL_CALL = "Local Traffic";
         private const string UDP_CALL = "UDP Traffic";
@@ -150,8 +150,6 @@ namespace dvmbridge
 
         private const int TX_MODE_DMR = 1;
         private const int TX_MODE_P25 = 2;
-
-        protected FneBase fne;
 
         private bool callInProgress = false;
 
@@ -190,62 +188,6 @@ namespace dvmbridge
         private UdpClient udpClient;
 
         /*
-        ** Properties
-        */
-
-        /// <summary>
-        /// Gets the system name for this <see cref="FneSystemBase"/>.
-        /// </summary>
-        public string SystemName
-        {
-            get
-            {
-                if (fne != null)
-                    return fne.SystemName;
-                return string.Empty;
-            }
-        }
-
-        /// <summary>
-        /// Gets the peer ID for this <see cref="FneSystemBase"/>.
-        /// </summary>
-        public uint PeerId
-        {
-            get
-            {
-                if (fne != null)
-                    return fne.PeerId;
-                return uint.MaxValue;
-            }
-        }
-
-        /// <summary>
-        /// Flag indicating whether this <see cref="FneSystemBase"/> is running.
-        /// </summary>
-        public bool IsStarted
-        { 
-            get
-            {
-                if (fne != null)
-                    return fne.IsStarted;
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Gets the <see cref="FneType"/> this <see cref="FneBase"/> is.
-        /// </summary>
-        public FneType FneType
-        {
-            get
-            {
-                if (fne != null)
-                    return fne.FneType;
-                return FneType.UNKNOWN;
-            }
-        }
-
-        /*
         ** Methods
         */
 
@@ -253,7 +195,7 @@ namespace dvmbridge
         /// Initializes a new instance of the <see cref="FneSystemBase"/> class.
         /// </summary>
         /// <param name="fne">Instance of <see cref="FneMaster"/> or <see cref="FnePeer"/></param>
-        public FneSystemBase(FneBase fne)
+        public FneSystemBase(FneBase fne) : base(fne, Program.FneLogLevel)
         {
             this.fne = fne;
 
@@ -265,22 +207,7 @@ namespace dvmbridge
             this.status[1] = new SlotStatus();  // DMR Slot 2
             this.status[2] = new SlotStatus();  // P25
 
-            // hook various FNE network callbacks
-            this.fne.DMRDataValidate = DMRDataValidate;
-            this.fne.DMRDataReceived += DMRDataReceived;
-
-            this.fne.P25DataValidate = P25DataValidate;
-            this.fne.P25DataPreprocess += P25DataPreprocess;
-            this.fne.P25DataReceived += P25DataReceived;
-
-            this.fne.NXDNDataValidate = NXDNDataValidate;
-            this.fne.NXDNDataReceived += NXDNDataReceived;
-
-            this.fne.PeerIgnored = PeerIgnored;
-            this.fne.PeerConnected += PeerConnected;
-
             // hook logger callback
-            this.fne.LogLevel = Program.FneLogLevel;
             this.fne.Logger = (LogLevel level, string message) =>
             {
                 switch (level)
@@ -684,26 +611,16 @@ namespace dvmbridge
         }
 
         /// <summary>
-        /// Starts the main execution loop for this <see cref="FneSystemBase"/>.
-        /// </summary>
-        public void Start()
-        {
-            if (!fne.IsStarted)
-                fne.Start();
-        }
-
-        /// <summary>
         /// Stops the main execution loop for this <see cref="FneSystemBase"/>.
         /// </summary>
-        public void Stop()
+        public override void Stop()
         {
             if (udpClient != null)
                 udpClient.Dispose();
             
             ShutdownAudio();
-            
-            if (fne.IsStarted)
-                fne.Stop();
+
+            base.Stop();
         }
 
         /// <summary>
@@ -755,7 +672,7 @@ namespace dvmbridge
         /// <param name="dataType">DMR Data Type</param>
         /// <param name="streamId">Stream ID</param>
         /// <returns>True, if peer is ignored, otherwise false.</returns>
-        protected virtual bool PeerIgnored(uint peerId, uint srcId, uint dstId, byte slot, CallType callType, FrameType frameType, DMRDataType dataType, uint streamId)
+        protected override bool PeerIgnored(uint peerId, uint srcId, uint dstId, byte slot, CallType callType, FrameType frameType, DMRDataType dataType, uint streamId)
         {
             return false;
         }
@@ -765,9 +682,9 @@ namespace dvmbridge
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected virtual void PeerConnected(object sender, PeerConnectedEvent e)
+        protected override void PeerConnected(object sender, PeerConnectedEvent e)
         {
             return;
         }
-    } // public abstract partial class FneSystemBase
+    } // public abstract partial class FneSystemBase : fnecore.FneSystemBase
 } // namespace dvmbridge

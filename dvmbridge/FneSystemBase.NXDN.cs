@@ -34,7 +34,7 @@ namespace dvmbridge
     /// <summary>
     /// Implements a FNE system base.
     /// </summary>
-    public abstract partial class FneSystemBase
+    public abstract partial class FneSystemBase : fnecore.FneSystemBase
     {
         private List<Tuple<byte[], ushort>> nxdnCallData = new List<Tuple<byte[], ushort>>();
 
@@ -54,7 +54,7 @@ namespace dvmbridge
         /// <param name="streamId">Stream ID</param>
         /// <param name="message">Raw message data</param>
         /// <returns>True, if data stream is valid, otherwise false.</returns>
-        protected virtual bool NXDNDataValidate(uint peerId, uint srcId, uint dstId, CallType callType, NXDNMessageType messageType, FrameType frameType, uint streamId, byte[] message)
+        protected override bool NXDNDataValidate(uint peerId, uint srcId, uint dstId, CallType callType, NXDNMessageType messageType, FrameType frameType, uint streamId, byte[] message)
         {
             return true;
         }
@@ -64,10 +64,10 @@ namespace dvmbridge
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected virtual void NXDNDataReceived(object sender, NXDNDataReceivedEvent e)
+        protected override void NXDNDataReceived(object sender, NXDNDataReceivedEvent e)
         {
             /* unsupported for now */
             return;
         }
-    } // public abstract partial class FneSystemBase
+    } // public abstract partial class FneSystemBase : fnecore.FneSystemBase
 } // namespace dvmbridge

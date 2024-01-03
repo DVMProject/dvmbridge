@@ -40,19 +40,12 @@ namespace dvmbridge
     /// <summary>
     /// Implements a FNE system base.
     /// </summary>
-    public abstract partial class FneSystemBase
+    public abstract partial class FneSystemBase : fnecore.FneSystemBase
     {
-        private const int DMR_FRAME_LENGTH_BYTES = 33;
-        private const int DMR_PACKET_SIZE = 55;
         private const int AMBE_BUF_LEN = 9;
 
         private const int DMR_AMBE_LENGTH_BYTES = 27;
         private const int AMBE_PER_SLOT = 3;
-
-        private static readonly byte[] DMR_SILENCE_DATA = { 0x01, 0x00,
-            0xB9, 0xE8, 0x81, 0x52, 0x61, 0x73, 0x00, 0x2A, 0x6B, 0xB9, 0xE8,
-            0x81, 0x52, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x73, 0x00,
-            0x2A, 0x6B, 0xB9, 0xE8, 0x81, 0x52, 0x61, 0x73, 0x00, 0x2A, 0x6B };
 
         private MBEDecoderManaged dmrDecoder;
         private MBEEncoderManaged dmrEncoder;
@@ -81,7 +74,7 @@ namespace dvmbridge
         /// <param name="streamId">Stream ID</param>
         /// <param name="message">Raw message data</param>
         /// <returns>True, if data stream is valid, otherwise false.</returns>
-        protected virtual bool DMRDataValidate(uint peerId, uint srcId, uint dstId, byte slot, CallType callType, FrameType frameType, DMRDataType dataType, uint streamId, byte[] message)
+        protected override bool DMRDataValidate(uint peerId, uint srcId, uint dstId, byte slot, CallType callType, FrameType frameType, DMRDataType dataType, uint streamId, byte[] message)
         {
             return true;
         }
@@ -94,22 +87,15 @@ namespace dvmbridge
         /// <param name="n"></param>
         private void CreateDMRMessage(ref byte[] data, FrameType frameType, byte seqNo, byte n)
         {
-            FneUtils.StringToBytes(Constants.TAG_DMR_DATA, data, 0, Constants.TAG_DMR_DATA.Length);
+            RemoteCallData callData = new RemoteCallData()
+            {
+                SrcId = (uint)Program.Configuration.SourceId,
+                DstId = (uint)Program.Configuration.DestinationId,
+                FrameType = frameType,
+                Slot = (byte)Program.Configuration.Slot
+            };
 
-            FneUtils.Write3Bytes((uint)Program.Configuration.SourceId, ref data, 5);        // Source Address
-            FneUtils.Write3Bytes((uint)Program.Configuration.DestinationId, ref data, 8);   // Destination Address
-
-            data[15U] = (byte)((Program.Configuration.Slot == 1) ? 0x00 : 0x80);            // Slot Number
-            data[15U] |= 0x00;                                                              // Group
-
-            if (frameType == FrameType.VOICE_SYNC)
-                data[15U] |= 0x10;
-            else if (frameType == FrameType.VOICE)
-                data[15U] |= n;
-            else
-                data[15U] |= (byte)(0x20 | (byte)frameType);
-
-            data[4U] = seqNo;
+            CreateDMRMessage(ref data, callData, seqNo, n);
         }
 
         /// <summary>
@@ -117,71 +103,21 @@ namespace dvmbridge
         /// </summary>
         private void SendDMRTerminator()
         {
-            byte n = (byte)((dmrSeqNo - 3U) % 6U);
-            uint fill = 6U - n;
-
-            FnePeer peer = (FnePeer)fne;
-            ushort pktSeq = peer.pktSeq(true);
-
-            byte[] data = null, dmrpkt = null;
-            if (n > 0U) 
-            {
-                for (uint i = 0U; i < fill; i++) 
-                {
-                    // generate DMR AMBE data
-                    data = new byte[DMR_FRAME_LENGTH_BYTES];
-                    Buffer.BlockCopy(DMR_SILENCE_DATA, 0, data, 0, DMR_FRAME_LENGTH_BYTES);
-
-                    byte lcss = embeddedData.GetData(ref data, dmrN);
-
-                    // generated embedded signalling
-                    EMB emb = new EMB();
-                    emb.ColorCode = 0;
-                    emb.LCSS = lcss;
-                    emb.Encode(ref data);
-
-                    // generate DMR network frame
-                    dmrpkt = new byte[DMR_PACKET_SIZE];
-                    CreateDMRMessage(ref dmrpkt, FrameType.DATA_SYNC, (byte)dmrSeqNo, n);
-                    Buffer.BlockCopy(data, 0, dmrpkt, 20, DMR_FRAME_LENGTH_BYTES);
-
-                    peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), dmrpkt, pktSeq, txStreamId);
-
-                    dmrSeqNo++;
-                    n++;
-                }
-            }
-
-            data = new byte[DMR_FRAME_LENGTH_BYTES];
-
             uint srcId = (uint)Program.Configuration.SourceId;
             if (srcIdOverride != 0 && Program.Configuration.OverrideSourceIdFromMDC)
                 srcId = srcIdOverride;
             uint dstId = (uint)Program.Configuration.DestinationId;
 
-            // generate DMR LC
-            LC dmrLC = new LC();
-            dmrLC.FLCO = (byte)DMRFLCO.FLCO_GROUP;
-            dmrLC.SrcId = srcId;
-            dmrLC.DstId = dstId;
+            RemoteCallData callData = new RemoteCallData()
+            {
+                SrcId = srcId,
+                DstId = dstId,
+                FrameType = FrameType.DATA_SYNC,
+                Slot = (byte)Program.Configuration.Slot
+            };
 
-            // generate the Slot TYpe
-            SlotType slotType = new SlotType();
-            slotType.DataType = (byte)DMRDataType.TERMINATOR_WITH_LC;
-            slotType.GetData(ref data);
-
-            FullLC.Encode(dmrLC, ref data, DMRDataType.TERMINATOR_WITH_LC);
-
-            // generate DMR network frame
-            dmrpkt = new byte[DMR_PACKET_SIZE];
-            CreateDMRMessage(ref dmrpkt, FrameType.DATA_SYNC, (byte)dmrSeqNo, 0);
-            Buffer.BlockCopy(data, 0, dmrpkt, 20, DMR_FRAME_LENGTH_BYTES);
-
-            peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_DMR), dmrpkt, pktSeq, txStreamId);
-
+            SendDMRTerminator(callData, ref dmrSeqNo, ref dmrN, embeddedData);
             ambeCount = 0;
-            dmrSeqNo = 0;
-            dmrN = 0;
         }
 
         /// <summary>
@@ -455,7 +391,7 @@ namespace dvmbridge
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected virtual void DMRDataReceived(object sender, DMRDataReceivedEvent e)
+        protected override void DMRDataReceived(object sender, DMRDataReceivedEvent e)
         {
             DateTime pktTime = DateTime.Now;
 
@@ -539,5 +475,5 @@ namespace dvmbridge
 
             return;
         }
-    } // public abstract partial class FneSystemBase
+    } // public abstract partial class FneSystemBase : fnecore.FneSystemBase
 } // namespace dvmbridge

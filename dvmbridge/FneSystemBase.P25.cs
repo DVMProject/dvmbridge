@@ -40,9 +40,8 @@ namespace dvmbridge
     /// <summary>
     /// Implements a FNE system base.
     /// </summary>
-    public abstract partial class FneSystemBase
+    public abstract partial class FneSystemBase : fnecore.FneSystemBase
     {
-        private const int P25_MSG_HDR_SIZE = 24;
         private const int IMBE_BUF_LEN = 11;
 
         private MBEDecoderManaged p25Decoder;
@@ -69,7 +68,7 @@ namespace dvmbridge
         /// <param name="streamId">Stream ID</param>
         /// <param name="message">Raw message data</param>
         /// <returns>True, if data stream is valid, otherwise false.</returns>
-        protected virtual bool P25DataValidate(uint peerId, uint srcId, uint dstId, CallType callType, P25DUID duid, FrameType frameType, uint streamId, byte[] message)
+        protected override bool P25DataValidate(uint peerId, uint srcId, uint dstId, CallType callType, P25DUID duid, FrameType frameType, uint streamId, byte[] message)
         {
             return true;
         }
@@ -79,50 +78,9 @@ namespace dvmbridge
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected virtual void P25DataPreprocess(object sender, P25DataReceivedEvent e)
+        protected override void P25DataPreprocess(object sender, P25DataReceivedEvent e)
         {
             return;
-        }
-
-        /// <summary>
-        /// Creates an P25 frame message header.
-        /// </summary>
-        /// <param name="duid"></param>
-        /// <param name="data"></param>
-        /// <param name="forcedSrcId"></param>
-        private void CreateP25MessageHdr(byte duid, ref byte[] data, uint forcedSrcId = 0)
-        {
-            uint srcId = (uint)Program.Configuration.SourceId;
-            if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.OverrideSourceIdFromUDP))
-                srcId = srcIdOverride;
-            if (forcedSrcId > 0 && forcedSrcId != (uint)Program.Configuration.SourceId)
-                srcId = forcedSrcId;
-            uint dstId = (uint)Program.Configuration.DestinationId;
-
-            FneUtils.StringToBytes(Constants.TAG_P25_DATA, data, 0, Constants.TAG_P25_DATA.Length);
-
-            data[4U] = P25Defines.LC_GROUP;                                                 // LCO
-
-            FneUtils.Write3Bytes(srcId, ref data, 5);                                       // Source Address
-            FneUtils.Write3Bytes(dstId, ref data, 8);                                       // Destination Address
-
-            data[11U] = 0;                                                                  // System ID
-            data[12U] = 0;
-
-            data[14U] = 0;                                                                  // Control Byte
-
-            data[15U] = 0;                                                                  // MFId
-
-            data[16U] = 0;                                                                  // Network ID
-            data[17U] = 0;
-            data[18U] = 0;
-
-            data[20U] = 0;                                                                  // LSD 1
-            data[21U] = 0;                                                                  // LSD 2
-
-            data[22U] = duid;                                                               // DUID
-
-            data[180U] = 0;                                                                 // Frame Type
         }
 
         /// <summary>
@@ -131,18 +89,19 @@ namespace dvmbridge
         /// <param name="grantDemand"></param>
         private void SendP25TDU(bool grantDemand = false)
         {
-            FnePeer peer = (FnePeer)fne;
-            ushort pktSeq = peer.pktSeq(true);
+            uint srcId = (uint)Program.Configuration.SourceId;
+            if (srcIdOverride != 0 && (Program.Configuration.OverrideSourceIdFromMDC || Program.Configuration.OverrideSourceIdFromUDP))
+                srcId = srcIdOverride;
+            uint dstId = (uint)Program.Configuration.DestinationId;
 
-            byte[] payload = new byte[200];
-            CreateP25MessageHdr((byte)P25DUID.TDU, ref payload);
-            payload[23U] = P25_MSG_HDR_SIZE;
+            RemoteCallData callData = new RemoteCallData()
+            {
+                SrcId = srcId,
+                DstId = dstId,
+                LCO = P25Defines.LC_GROUP
+            };
 
-            // if this TDU is demanding a grant, set the grant demand control bit
-            if (grantDemand)
-                payload[14U] |= 0x80;
-
-            peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
+            SendP25TDU(callData, grantDemand);
 
             p25SeqNo = 0;
             p25N = 0;
@@ -653,6 +612,12 @@ namespace dvmbridge
                 dstId = forcedDstId;
 
             FnePeer peer = (FnePeer)fne;
+            RemoteCallData callData = new RemoteCallData()
+            {
+                SrcId = srcId,
+                DstId = dstId,
+                LCO = P25Defines.LC_GROUP
+            };
 
             // send P25 LDU1
             if (p25N == 8U)
@@ -666,7 +631,7 @@ namespace dvmbridge
                 Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                 byte[] payload = new byte[200];
-                CreateP25MessageHdr((byte)P25DUID.LDU1, ref payload, srcId);
+                CreateP25MessageHdr((byte)P25DUID.LDU1, callData, ref payload);
                 CreateP25LDU1Message(ref payload, srcId);
 
                 peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
@@ -684,7 +649,7 @@ namespace dvmbridge
                 Log.Logger.Information($"({SystemName}) P25D: Traffic *VOICE FRAME    * PEER {fne.PeerId} SRC_ID {srcId} TGID {dstId} [STREAM ID {txStreamId}]");
 
                 byte[] payload = new byte[200];
-                CreateP25MessageHdr((byte)P25DUID.LDU2, ref payload, srcId);
+                CreateP25MessageHdr((byte)P25DUID.LDU2, callData, ref payload);
                 CreateP25LDU2Message(ref payload);
 
                 peer.SendMaster(new Tuple<byte, byte>(Constants.NET_FUNC_PROTOCOL, Constants.NET_PROTOCOL_SUBFUNC_P25), payload, pktSeq, txStreamId);
@@ -823,7 +788,7 @@ namespace dvmbridge
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        protected virtual void P25DataReceived(object sender, P25DataReceivedEvent e)
+        protected override void P25DataReceived(object sender, P25DataReceivedEvent e)
         {
             DateTime pktTime = DateTime.Now;
 
@@ -981,5 +946,5 @@ namespace dvmbridge
 
             return;
         }
-    } // public abstract partial class FneSystemBase
+    } // public abstract partial class FneSystemBase : fnecore.FneSystemBase
 } // namespace dvmbridge
