@@ -1,15 +1,17 @@
-﻿/**
-* Digital Voice Modem - Bridge
+﻿// SPDX-License-Identifier: GPL-2.0-only
+/**
+* Digital Voice Modem - Audio Bridge
 * AGPLv3 Open Source. Use is subject to license terms.
 * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 *
-* @package DVM / Bridge
+* @package DVM / Audio Bridge
+* @derivedfrom MDCTool project (https://github.com/gatekeep/MDCTool)
+* @license GPLv2 License (https://opensource.org/licenses/GPL-2.0)
+*
+*   Copyright (C) 2023 Bryan Biedenkapp, N2PLL
 *
 */
-//
-// Based on code from the MDCTool project. (https://github.com/gatekeep/MDCTool)
-// Licensed under the GPLv2 License (https://opensource.org/licenses/GPL-2.0)
-//
+
 /*
  * mdc_common.c
  * Author: Matthew Kaufman (matthew@eeph.com)
@@ -40,19 +42,6 @@
  *  or see http://www.gnu.org/copyleft/gpl.html
  *
  */
-/*
-*   Copyright (C) 2023 by Bryan Biedenkapp N2PLL
-*
-*   This program is free software: you can redistribute it and/or modify
-*   it under the terms of the GNU Affero General Public License as published by
-*   the Free Software Foundation, either version 3 of the License, or
-*   (at your option) any later version.
-*
-*   This program is distributed in the hope that it will be useful,
-*   but WITHOUT ANY WARRANTY; without even the implied warranty of
-*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*   GNU Affero General Public License for more details.
-*/
 
 namespace dvmbridge.MDC1200
 {

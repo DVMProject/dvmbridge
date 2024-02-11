@@ -1,11 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /**
 * Digital Voice Modem - MBE Vocoder
 * GPLv2 Open Source. Use is subject to license terms.
 * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 *
 * @package DVM / MBE Vocoder
+* @license GPLv2 License (https://opensource.org/licenses/GPL-2.0)
 *
 */
+#if !defined(__MBE_H__)
+#define __MBE_H__
+
 /*
  * Copyright (C) 2010 mbelib Author
  * GPG Key ID: 0xEA5EFE2C (9E7A 5527 9CDC EBF7 BF1B  D772 4F98 E863 EA5E FE2C)
@@ -22,8 +27,6 @@
  * OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
-#if !defined(__MBE_H__)
-#define __MBE_H__
 
 #ifdef __cplusplus
 extern "C" {

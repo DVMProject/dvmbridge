@@ -1,11 +1,19 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /**
 * Digital Voice Modem - MBE Vocoder
 * GPLv2 Open Source. Use is subject to license terms.
 * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 *
 * @package DVM / MBE Vocoder
+* @license GPLv2 License (https://opensource.org/licenses/GPL-2.0)
+*
+*   Copyright (C) 2019-2021 Doug McLain
+*   Copyright (C) 2021 Bryan Biedenkapp, N2PLL
 *
 */
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 /*
  * AMBE halfrate encoder - Copyright 2016 Max H. Parke KA1RBI
  * Copyright (C) 2021 by Bryan Biedenkapp N2PLL
@@ -27,9 +35,6 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  */
-
-#define _USE_MATH_DEFINES
-#include <math.h>
 
 #include "Defines.h"
 #include "edac/AMBEFEC.h"
