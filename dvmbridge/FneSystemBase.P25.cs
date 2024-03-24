@@ -797,7 +797,7 @@ namespace dvmbridge
             {
                 if (e.SrcId == 0)
                 {
-                    Log.Logger.Warning($"({SystemName}) P25D: Received call from SRC_ID {e.SrcId}? Dropping call e.Data.");
+                    //Log.Logger.Warning($"({SystemName}) P25D: Received call from SRC_ID {e.SrcId}? Dropping call e.Data.");
                     return;
                 }
 
