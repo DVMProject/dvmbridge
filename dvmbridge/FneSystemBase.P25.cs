@@ -24,6 +24,7 @@ using fnecore.P25;
 using NAudio.Wave;
 
 using vocoder;
+using System.Windows.Forms;
 
 namespace dvmbridge
 {
@@ -788,6 +789,10 @@ namespace dvmbridge
             if (e.DUID == P25DUID.HDU || e.DUID == P25DUID.TSDU || e.DUID == P25DUID.PDU)
                 return;
 
+            uint sysId = (uint)((e.Data[11U] << 8) | (e.Data[12U] << 0));
+            uint netId = FneUtils.Bytes3ToUInt32(e.Data, 16);
+            byte control = e.Data[14U];
+
             byte len = e.Data[23];
             byte[] data = new byte[len];
             for (int i = 24; i < len; i++)
@@ -799,6 +804,13 @@ namespace dvmbridge
                 {
                     //Log.Logger.Warning($"({SystemName}) P25D: Received call from SRC_ID {e.SrcId}? Dropping call e.Data.");
                     return;
+                }
+
+                if ((e.DUID == P25DUID.TDU) || (e.DUID == P25DUID.TDULC))
+                {
+                    // ignore TDU's that are grant demands
+                    if ((control & 0x80U) == 0x80U)
+                        return;
                 }
 
                 // ensure destination ID matches
