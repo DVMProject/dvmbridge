@@ -185,7 +185,7 @@ namespace dvmbridge
         /// Initializes a new instance of the <see cref="FneSystemBase"/> class.
         /// </summary>
         /// <param name="fne">Instance of <see cref="FneMaster"/> or <see cref="FnePeer"/></param>
-        public FneSystemBase(FneBase fne) : base(fne, Program.FneLogLevel)
+        public FneSystemBase(FnePeer fne) : base(fne, Program.FneLogLevel)
         {
             this.fne = fne;
 

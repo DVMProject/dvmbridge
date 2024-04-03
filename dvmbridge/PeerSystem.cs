@@ -127,7 +127,22 @@ namespace dvmbridge
             peer.Passphrase = Program.Configuration.Passphrase;
             peer.Information.Details = ConfigurationObject.ConvertToDetails(Program.Configuration);
 
+            peer.PeerConnected += Peer_PeerConnected;
+
             return peer;
+        }
+
+        /// <summary>
+        /// Event action that handles when a peer connects.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private static void Peer_PeerConnected(object sender, PeerConnectedEvent e)
+        {
+            // fake a group affiliation
+            FnePeer peer = (FnePeer)sender;
+            peer.SendMasterGroupAffiliation(1, (uint)Program.Configuration.DestinationId);
         }
 
         /// <summary>

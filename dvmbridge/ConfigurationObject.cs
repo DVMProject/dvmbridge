@@ -237,7 +237,7 @@ namespace dvmbridge
             details.Password = "ABCD123";
             details.Port = 9990;
 
-            details.Software = AssemblyVersion._VERSION;
+            details.Software = $"DVM_BRIDGE_R{AssemblyVersion._SEM_VERSION.Major.ToString("D2")}A{AssemblyVersion._SEM_VERSION.Minor.ToString("D2")}";//AssemblyVersion._VERSION;
 
             return details;
         }
