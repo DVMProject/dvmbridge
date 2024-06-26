@@ -43,6 +43,9 @@ namespace dvmbridge
         private uint p25SeqNo = 0;
         private byte p25N = 0;
 
+        private bool ignoreCall = false;
+        private byte callAlgoId = P25Defines.P25_ALGO_UNENCRYPT;
+
         /*
         ** Methods
         */
@@ -801,10 +804,7 @@ namespace dvmbridge
             if (e.CallType == CallType.GROUP)
             {
                 if (e.SrcId == 0)
-                {
-                    //Log.Logger.Warning($"({SystemName}) P25D: Received call from SRC_ID {e.SrcId}? Dropping call e.Data.");
                     return;
-                }
 
                 if ((e.DUID == P25DUID.TDU) || (e.DUID == P25DUID.TDULC))
                 {
@@ -821,6 +821,7 @@ namespace dvmbridge
                 if (e.StreamId != status[P25_FIXED_SLOT].RxStreamId && ((e.DUID != P25DUID.TDU) && (e.DUID != P25DUID.TDULC)))
                 {
                     callInProgress = true;
+                    callAlgoId = P25Defines.P25_ALGO_UNENCRYPT;
                     status[P25_FIXED_SLOT].RxStart = pktTime;
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *CALL START     * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} [STREAM ID {e.StreamId}]");
                     if (Program.Configuration.PreambleLeaderTone)
@@ -829,9 +830,42 @@ namespace dvmbridge
 
                 if (((e.DUID == P25DUID.TDU) || (e.DUID == P25DUID.TDULC)) && (status[P25_FIXED_SLOT].RxType != FrameType.TERMINATOR))
                 {
+                    ignoreCall = false;
+                    callAlgoId = P25Defines.P25_ALGO_UNENCRYPT;
                     callInProgress = false;
                     TimeSpan callDuration = pktTime - status[P25_FIXED_SLOT].RxStart;
                     Log.Logger.Information($"({SystemName}) P25D: Traffic *CALL END       * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} DUR {callDuration} [STREAM ID {e.StreamId}]");
+                    return;
+                }
+
+                if (ignoreCall && callAlgoId == P25Defines.P25_ALGO_UNENCRYPT)
+                    ignoreCall = false;
+
+                // if this is an LDU1 see if this is the first LDU with HDU encryption data
+                if (e.DUID == P25DUID.LDU1 && !ignoreCall)
+                {
+                    byte frameType = e.Data[180];
+                    if (frameType == P25Defines.P25_FT_HDU_VALID)
+                        callAlgoId = e.Data[181];
+                }
+
+                if (e.DUID == P25DUID.LDU2 && !ignoreCall)
+                    callAlgoId = data[88];
+
+                if (ignoreCall)
+                    return;
+
+                if (callAlgoId != P25Defines.P25_ALGO_UNENCRYPT)
+                {
+                    if (status[P25_FIXED_SLOT].RxType != FrameType.TERMINATOR)
+                    {
+                        callInProgress = false;
+                        TimeSpan callDuration = pktTime - status[P25_FIXED_SLOT].RxStart;
+                        Log.Logger.Information($"({SystemName}) P25D: Traffic *CALL END (T)    * PEER {e.PeerId} SRC_ID {e.SrcId} TGID {e.DstId} DUR {callDuration} [STREAM ID {e.StreamId}]");
+                    }
+
+                    ignoreCall = true;
+                    return;
                 }
 
                 int count = 0;
