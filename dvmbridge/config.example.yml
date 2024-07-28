@@ -80,6 +80,11 @@ port: 62031
 # FNE access password.
 passphrase: RPT1234
 
+# Flag indicating whether or not FNE encryption is enabled.
+encrypted: false
+# Preshared AES key for FNE encryption.
+presharedKey: "000102030405060708090A0B0C0D0E0F000102030405060708090A0B0C0D0E0F"
+
 # Source "Radio ID" for transmitted audio frames.
 sourceId: 1234567
 # Flag indicating the source "Radio ID" will be overridden from the detected

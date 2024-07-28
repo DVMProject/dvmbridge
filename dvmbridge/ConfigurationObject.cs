@@ -179,6 +179,15 @@ namespace dvmbridge
         public string Passphrase;
 
         /// <summary>
+        /// Enable/Disable AES Wrapped UDP
+        /// </summary>
+        public bool Encrypted;
+        /// <summary>
+        /// Pre shared AES key for AES wrapped UDP
+        /// </summary>
+        public string PresharedKey;
+
+        /// <summary>
         /// Source "Radio ID" for transmitted audio frames
         /// </summary>
         public int SourceId;

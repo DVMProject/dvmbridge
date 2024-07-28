@@ -8,6 +8,7 @@
 * @license AGPLv3 License (https://opensource.org/licenses/AGPL-3.0)
 *
 *   Copyright (C) 2023 Bryan Biedenkapp, N2PLL
+*   Copyright (C) 2024 Caleb, KO4UYJ
 *
 */
 using System;
@@ -60,6 +61,7 @@ namespace dvmbridge
         private static FnePeer Create()
         {
             IPEndPoint endpoint = new IPEndPoint(IPAddress.Any, Program.Configuration.Port);
+            string presharedKey = Program.Configuration.Encrypted ? Program.Configuration.PresharedKey : null;
 
             if (Program.Configuration.Address == null)
                 throw new NullReferenceException("address");
@@ -118,7 +120,7 @@ namespace dvmbridge
             Log.Logger.Information($"    Destination ID: {Program.Configuration.DestinationId}");
             Log.Logger.Information($"    Destination DMR Slot: {Program.Configuration.Slot}");
 
-            FnePeer peer = new FnePeer(Program.Configuration.Name, Program.Configuration.PeerId, endpoint);
+            FnePeer peer = new FnePeer(Program.Configuration.Name, Program.Configuration.PeerId, endpoint, presharedKey);
 
             // set configuration parameters
             peer.RawPacketTrace = Program.Configuration.RawPacketTrace;
